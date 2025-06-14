@@ -1,6 +1,7 @@
 {{- $prefix := include "greenstar.prefix" . -}}
 {{- $componentName := "server" -}}
 {{- $serviceAccountName := printf "%s-%s" $prefix $componentName -}}
+{{- $scrapersServiceAccountName := printf "%s-%s" $prefix "scrapers" -}}
 {{- $serviceName := printf "%s-%s" $prefix $componentName -}}
 {{- $dataPVCName := printf "%s-%s-data" $prefix $componentName -}}
 {{- /*------------------------------------------------------------------------------------------------------------*/ -}}
@@ -19,6 +20,63 @@ metadata:
     {{- include "greenstar.commonLabels" . | nindent 4 }}
     app.kubernetes.io/component: {{ $componentName | quote }}
   name: {{ $serviceAccountName | quote }}
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    {{- include "greenstar.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ $componentName | quote }}
+  name: {{ printf "%s-%s" $prefix $componentName | quote }}
+rules:
+  - apiGroups: [ "" ]
+    resources: [ pods ]
+    verbs: [ get, list ]
+  - apiGroups: [ "" ]
+    resources: [ pods/log ]
+    verbs: [ get ]
+  - apiGroups: [ apps ]
+    resources: [ replicasets, deployments ]
+    verbs: [ get ]
+  - apiGroups: [ batch ]
+    resources: [ cronjobs, jobs ]
+    verbs: [ list, get, create, delete, patch ]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    {{- include "greenstar.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ $componentName | quote }}
+  name: {{ printf "%s-%s" $prefix $componentName | quote }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ printf "%s-%s" $prefix $componentName | quote }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ $serviceAccountName | quote }}
+    namespace: {{ .Release.Namespace }}
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  {{- if not (empty .Values.scrapers.rbac.annotations) }}
+  annotations:
+    {{ range $name, $value := .Values.scrapers.rbac.annotations -}}
+    {{ $name }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+  labels:
+    {{- include "greenstar.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: scrapers
+  name: {{ $scrapersServiceAccountName | quote }}
 
 ---
 
@@ -128,6 +186,27 @@ spec:
               value: "3"
             - name: PGSSLMODE
               value: "disable"
+            - name: SCRAPERS_SERVICE_ACCOUNT_NAME
+              value: {{ $scrapersServiceAccountName | quote }}
+            - name: SCRAPERS_IMAGE_NAME_REPOSITORY
+              value: {{ .Values.scrapers.image.repository | quote }}
+            - name: SCRAPERS_IMAGE_NAME_TAG
+              value: {{ .Values.scrapers.image.tag | quote }}
+            - name: SCRAPERS_IMAGE_NAME_PULL_POLICY
+              value: {{ .Values.scrapers.image.pullPolicy | quote }}
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            # TODO: is this used anywhere?
             - name: HTTP_ALLOWED_ORIGINS
               value: "https://signup.{{ .Values.ingress.domain }},https://app.{{ .Values.ingress.domain }},https://*.app.{{ .Values.ingress.domain }}"
             {{- range $key, $value := .Values.server.extraEnv }}

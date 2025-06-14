@@ -8,7 +8,7 @@ RUN test -f apply-patches.sh && apk add --no-cache patch ed && ./apply-patches.s
 
 FROM node:24-alpine AS development
 WORKDIR /app
-RUN echo "VITE_GRAPHQL_API_URL=https://api.greenstar.test/graphql" > .env
+RUN echo "VITE_API_URL=https://api.greenstar.test" > .env
 ENV NODE_ENV=development
 COPY --from=dependencies /app ./
 COPY eslint.config.js ./
@@ -24,7 +24,7 @@ RUN npm pkg set version="${VERSION}"
 ENTRYPOINT ["npm","run","dev"]
 
 FROM development AS builder-ci
-RUN echo "VITE_GRAPHQL_API_URL=https://api.greenstar.test/graphql" > .env
+RUN echo "VITE_API_URL=https://api.greenstar.test" > .env
 ENV NODE_ENV=production
 ARG VERSION=0.0.0-notset
 RUN npm pkg set version="${VERSION}"
@@ -36,7 +36,7 @@ RUN mkdir -p /etc/greenstar && echo "${VERSION}" > /etc/greenstar/version
 COPY --from=builder-ci /app/dist /app/
 
 FROM development AS builder-production
-RUN echo "VITE_GRAPHQL_API_URL=https://api.greenstar.finance/graphql" > .env
+RUN echo "VITE_API_URL=https://api.greenstar.finance" > .env
 ENV NODE_ENV=production
 ARG VERSION=0.0.0-notset
 RUN npm pkg set version="${VERSION}"

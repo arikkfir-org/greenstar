@@ -32,8 +32,8 @@ ratesjob:
 frontend:
   extraArgs: [ "--", "--logLevel=info", "--port=3000", "--host=0.0.0.0" ]
   extraEnv:
-    VITE_GRAPHQL_API_URL:
-      value: https://api.greenstar.test/graphql
+    VITE_API_URL:
+      value: https://api.greenstar.test
   ingress:
     enabled: true
     parentRef:

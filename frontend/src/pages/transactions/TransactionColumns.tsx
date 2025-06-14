@@ -1,10 +1,10 @@
 import { ReactNode, useMemo } from "react"
-import { DateTime } from "luxon"
 import { TransactionAccountInfo, TransactionRow } from "./TransactionRow.tsx"
 import { DynamicIcon } from "../../components/DynamicIcon.tsx"
 import { GridColDef, GridRenderCellParams } from "@mui/x-data-grid-premium"
 import { Tooltip, Typography } from "@mui/material"
 import { useCurrencyFormatter } from "../../hooks/locale.ts"
+import { temporalColumn } from "../../util/datagrid.tsx"
 
 // TODO: date display & editing format should be user-configurable
 
@@ -17,31 +17,17 @@ export function useTransactionColumns(): GridColDef<TransactionRow>[] {
     const currencyFormatter = useCurrencyFormatter()
     return useMemo<GridColDef<TransactionRow>[]>((): GridColDef<TransactionRow>[] => {
         return [
-            {
+            temporalColumn({
                 field: "date",
                 headerName: "Date",
                 description: "Date of transaction",
-                flex: 0,
-                type: "dateTime",
-                groupable: false,
-                pivotable: false,
-                valueGetter: (value: any): Date => DateTime.fromISO(value).toJSDate(),
-                valueFormatter: (v: Date) => DateTime.fromJSDate(v).toLocaleString(DateTime.DATE_SHORT),
-            } as GridColDef<TransactionRow, Date, string>,
+            }),
             {
                 field: "referenceID",
                 headerName: "Reference ID",
                 description: "Unique identifier for the transaction",
                 flex: 0,
                 type: "string",
-                display: 'flex',
-                groupable: false,
-                pivotable: false,
-                renderCell: (p: GridRenderCellParams<TransactionRow, string, string>): ReactNode => (
-                    <Tooltip title={p.value}>
-                        <Typography>{p.value}</Typography>
-                    </Tooltip>
-                ),
             } as GridColDef<TransactionRow, string>,
             {
                 field: "amount",
@@ -59,9 +45,7 @@ export function useTransactionColumns(): GridColDef<TransactionRow>[] {
                 description: "General description of the transaction",
                 flex: 1,
                 type: "string",
-                display: 'flex',
-                groupable: false,
-                pivotable: false,
+                display: "flex",
                 renderCell: (p: GridRenderCellParams<TransactionRow, string>): ReactNode => (
                     <Tooltip title={p.value || "None"}>
                         <Typography>{p.value || "None"}</Typography>
@@ -74,11 +58,9 @@ export function useTransactionColumns(): GridColDef<TransactionRow>[] {
                 description: "Transaction source account where currency was transferred from",
                 flex: 0.5,
                 type: "string",
-                groupable: false,
-                pivotable: false,
                 sortComparator: (v1: TransactionAccountInfo, v2: TransactionAccountInfo): number =>
                     v1.displayName.localeCompare(v2.displayName),
-                display: 'flex',
+                display: "flex",
                 renderCell: (p: GridRenderCellParams<TransactionRow, TransactionAccountInfo, string>): ReactNode => (
                     <>
                         {p.value && <DynamicIcon svgString={p.value?.icon} />}
@@ -93,9 +75,7 @@ export function useTransactionColumns(): GridColDef<TransactionRow>[] {
                 description: "Transaction target account where currency was transferred to",
                 flex: 0.5,
                 type: "string",
-                display: 'flex',
-                groupable: false,
-                pivotable: false,
+                display: "flex",
                 sortComparator: (v1: TransactionAccountInfo, v2: TransactionAccountInfo): number =>
                     v1.displayName.localeCompare(v2.displayName),
                 renderCell: (p: GridRenderCellParams<TransactionRow, TransactionAccountInfo, string>): ReactNode => (
@@ -107,5 +87,5 @@ export function useTransactionColumns(): GridColDef<TransactionRow>[] {
                 ),
             } as GridColDef<TransactionRow, TransactionAccountInfo, string>,
         ]
-    }, [currencyFormatter])
+    }, [ currencyFormatter ])
 }

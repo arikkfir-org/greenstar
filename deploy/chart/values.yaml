@@ -51,6 +51,13 @@ server:
       memory: "512Mi"
   volumeMounts: []
   volumes: []
+scrapers:
+  image:
+    repository: ghcr.io/arikkfir/greenstar/scrapers
+    tag: "local"
+    pullPolicy: IfNotPresent
+  rbac:
+    annotations: {}
 ratesjob:
   extraEnv: {}
   image:

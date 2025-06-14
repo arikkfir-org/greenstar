@@ -1,10 +1,3 @@
-type ScraperParameterType {
-    id: ID!
-    createdAt: DateTime!
-    updatedAt: DateTime!
-    displayName: String!
-}
-
 type ScraperType {
     id: ID!
     createdAt: DateTime!
@@ -15,11 +8,22 @@ type ScraperType {
 
 type ScraperTypeParameter {
     id: ID!
-    createdAt: DateTime!
-    updatedAt: DateTime!
     displayName: String!
-    scraperType: ScraperType!
-    parameterType: ScraperParameterType!
+    type: ScraperParameterType!
+}
+
+enum ScraperParameterType {
+    String
+    Password
+    Boolean
+    Integer
+    Float
+    Date
+    Account
+}
+
+extend type Query {
+    scraperTypes: [ScraperType!]!
 }
 
 type Scraper {
@@ -28,34 +32,48 @@ type Scraper {
     updatedAt: DateTime!
     displayName: String!
     type: ScraperType!
+    lastSuccessfulScrapedDate: DateTime,
+    tenant: Tenant!
     parameters: [ScraperParameter!]!
+    job(id: ID!): ScraperJob
+    jobs: [ScraperJob!]!
 }
 
 type ScraperParameter {
-    scraper: Scraper!
     parameter: ScraperTypeParameter!
     value: String!
-    createdAt: DateTime!
-    updatedAt: DateTime!
 }
 
-extend type Query {
-    scraperParameterTypes: [ScraperParameterType!]!
-    scraperTypes: [ScraperType!]!
+type ScraperJob {
+    id: ID!
+    createdAt: DateTime!
+    scraper: Scraper!
+    parameters: [ScraperParameter!]!
+    status: ScraperJobStatus!
+    logs(page: Int, pageSize: Int): [String!]!
+}
+
+enum ScraperJobStatus {
+    Pending,
+    Running,
+    Successful,
+    Failed
 }
 
 extend type Mutation {
-    createScraper(
+    upsertScraper(
         tenantID: ID!,
         id: ID,
         displayName: String!,
         scraperTypeID: ID!,
         parameters: [ScraperParameterInput!]!
     ): Scraper!
-    deleteScraper(tenantID: ID!, scraperTypeID: ID!, id: ID!): Void!
+    deleteScraper(tenantID: ID!, id: ID!): Void!
+    setLastSuccessfulScrapedDate(tenantID: ID!, scraperID: ID!, date: DateTime!): DateTime!
+    triggerScraper(tenantID: ID!, id: ID!): ScraperJob!
 }
 
 input ScraperParameterInput {
-    scraperTypeParameterID: ID!
+    parameterID: ID!
     value: String!
 }

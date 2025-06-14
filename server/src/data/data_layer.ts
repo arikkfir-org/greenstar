@@ -8,7 +8,6 @@ import {
     CurrencyRate,
     MutationCreateAccountArgs,
     MutationCreateCurrencyRateArgs,
-    MutationCreateScraperArgs,
     MutationCreateTenantArgs,
     MutationCreateTransactionArgs,
     MutationDeleteAccountArgs,
@@ -16,12 +15,11 @@ import {
     MutationDeleteTenantArgs,
     MutationDeleteTransactionArgs,
     MutationMoveAccountArgs,
+    MutationUpsertScraperArgs,
     QueryTenantsArgs,
     Scraper,
-    ScraperParameter,
-    ScraperParameterType,
+    ScraperJob,
     ScraperType,
-    ScraperTypeParameter,
     Tenant,
     TenantAccountsBalanceOverTimeArgs,
     TenantTransactionsArgs,
@@ -47,14 +45,8 @@ export interface CurrencyRateKey {
     targetCurrencyCode: Currency["code"],
 }
 
-export interface ScraperTypeParameterKey {
-    scraperTypeID: ScraperType["id"],
-    scraperTypeParameterID: ScraperTypeParameter["id"],
-}
-
 export interface ScraperKey {
     tenantID: Tenant["id"],
-    scraperTypeID: ScraperType["id"],
     id: Scraper["id"],
 }
 
@@ -68,7 +60,7 @@ export interface DataLayer {
 
     createCurrencyRate(args: MutationCreateCurrencyRateArgs): Promise<CurrencyRate>
 
-    createScraper(args: MutationCreateScraperArgs): Promise<Scraper>
+    upsertScraper(args: MutationUpsertScraperArgs): Promise<Scraper>
 
     createTenant(args: MutationCreateTenantArgs): Promise<Tenant>
 
@@ -112,26 +104,13 @@ export interface DataLayer {
 
     fetchRootAccounts(tenantID: Tenant["id"]): Promise<Account[]>
 
-    fetchScraperParameterType(id: ScraperParameterType["id"]): Promise<ScraperParameterType | null>
-
-    fetchScraperParameterTypes(): Promise<ScraperParameterType[]>
-
     fetchScraperType(scraperTypeID: ScraperType["id"]): Promise<ScraperType | null>
 
     fetchScraperTypes(): Promise<ScraperType[]>
 
-    fetchScraperTypeParameter(scraperTypeID: ScraperType["id"],
-        scraperTypeParameterID: ScraperTypeParameter["id"]): Promise<ScraperTypeParameter | null>
+    fetchScraper(tenantID: Tenant["id"], id: Scraper["id"]): Promise<Scraper | null>
 
-    fetchScraperTypeParameters(scraperTypeID: ScraperType["id"]): Promise<ScraperTypeParameter[]>
-
-    fetchScraper(tenantID: Tenant["id"], scraperTypeID: ScraperType["id"], id: Scraper["id"]): Promise<Scraper | null>
-
-    fetchScrapers(tenantID: Tenant["id"]): Promise<Scraper[]>
-
-    fetchScraperParameters(tenantID: Tenant["id"],
-        scraperTypeID: ScraperType["id"],
-        id: Scraper["id"]): Promise<ScraperParameter[]>
+    fetchScrapers(tenantID: Tenant["id"], scraperTypeID?: ScraperType["id"]): Promise<Scraper[]>
 
     fetchTenants(args: QueryTenantsArgs): Promise<Tenant[]>
 
@@ -146,6 +125,16 @@ export interface DataLayer {
     fetchTransactionsSummary(tenantID: Tenant["id"]): Promise<TransactionsSummaryResult>
 
     moveAccount(args: MutationMoveAccountArgs): Promise<Account>
+
+    fetchScraperJob(tenantID: Tenant["id"], id: ScraperJob["id"]): Promise<ScraperJob | null>
+
+    fetchScraperJobs(tenantID: Tenant["id"], id: Scraper["id"]): Promise<ScraperJob[]>
+
+    triggerScraper(tenantID: Tenant["id"], scraperID: Scraper["id"]): Promise<ScraperJob>
+
+    setLastSuccessfulScrapedDate(tenantID: Tenant["id"], scraperID: Scraper["id"], date: DateTime): Promise<DateTime>
+
+    fetchScraperJobLogs(tenantID: string, scraperJobID: string, page: number, pageSize: number): Promise<string[]>
 }
 
 export class NoOpDataLayer implements DataLayer {
@@ -157,7 +146,7 @@ export class NoOpDataLayer implements DataLayer {
         throw new Error("Not implemented")
     }
 
-    createScraper(_args: MutationCreateScraperArgs): Promise<Scraper> {
+    upsertScraper(_args: MutationUpsertScraperArgs): Promise<Scraper> {
         throw new Error("Not implemented")
     }
 
@@ -189,7 +178,9 @@ export class NoOpDataLayer implements DataLayer {
         throw new Error("Not implemented")
     }
 
-    fetchAccountBalance(_tenantID: Tenant["id"], _accountID: Account["id"], _args: AccountBalanceArgs): Promise<number> {
+    fetchAccountBalance(_tenantID: Tenant["id"],
+        _accountID: Account["id"],
+        _args: AccountBalanceArgs): Promise<number> {
         throw new Error("Not implemented")
     }
 
@@ -237,14 +228,6 @@ export class NoOpDataLayer implements DataLayer {
         throw new Error("Not implemented")
     }
 
-    fetchScraperParameterType(_id: ScraperParameterType["id"]): Promise<ScraperParameterType | null> {
-        throw new Error("Not implemented")
-    }
-
-    fetchScraperParameterTypes(): Promise<ScraperParameterType[]> {
-        throw new Error("Not implemented")
-    }
-
     fetchScraperType(_scraperTypeID: ScraperType["id"]): Promise<ScraperType | null> {
         throw new Error("Not implemented")
     }
@@ -253,26 +236,11 @@ export class NoOpDataLayer implements DataLayer {
         throw new Error("Not implemented")
     }
 
-    fetchScraperTypeParameter(_scraperTypeID: ScraperType["id"],
-        _scraperTypeParameterID: ScraperTypeParameter["id"]): Promise<ScraperTypeParameter | null> {
-        throw new Error("Not implemented")
-    }
-
-    fetchScraperTypeParameters(_scraperTypeID: ScraperType["id"]): Promise<ScraperTypeParameter[]> {
-        throw new Error("Not implemented")
-    }
-
-    fetchScraper(_tenantID: Tenant["id"], _scraperTypeID: ScraperType["id"], _id: Scraper["id"]): Promise<Scraper | null> {
+    fetchScraper(_tenantID: Tenant["id"], _id: Scraper["id"]): Promise<Scraper | null> {
         throw new Error("Not implemented")
     }
 
     fetchScrapers(_tenantID: Tenant["id"]): Promise<Scraper[]> {
-        throw new Error("Not implemented")
-    }
-
-    fetchScraperParameters(_tenantID: Tenant["id"],
-        _scraperTypeID: ScraperType["id"],
-        _id: Scraper["id"]): Promise<ScraperParameter[]> {
         throw new Error("Not implemented")
     }
 
@@ -288,9 +256,7 @@ export class NoOpDataLayer implements DataLayer {
         throw new Error("Not implemented")
     }
 
-    fetchTransactions(_tenantID: Tenant["id"],
-        _direction: TransactionsKey["direction"],
-        _args: TenantTransactionsArgs): Promise<TransactionsResult> {
+    fetchTransactions(_tenantID: Tenant["id"], _direction: TransactionsKey["direction"], _args: TenantTransactionsArgs): Promise<TransactionsResult> {
         throw new Error("Not implemented")
     }
 
@@ -301,17 +267,35 @@ export class NoOpDataLayer implements DataLayer {
     moveAccount(_args: MutationMoveAccountArgs): Promise<Account> {
         throw new Error("Not implemented")
     }
+
+    fetchScraperJob(_tenantID: Tenant["id"], _id: ScraperJob["id"]): Promise<ScraperJob | null> {
+        throw new Error("Not implemented")
+    }
+
+    fetchScraperJobs(_tenantID: Tenant["id"], _id: Scraper["id"]): Promise<ScraperJob[]> {
+        throw new Error("Not implemented")
+    }
+
+    triggerScraper(_tenantID: Tenant["id"], _scraperID: Scraper["id"]): Promise<ScraperJob> {
+        throw new Error("Not implemented")
+    }
+
+    setLastSuccessfulScrapedDate(_tenantID: Tenant["id"],
+        _scraperID: Scraper["id"],
+        _date: DateTime): Promise<DateTime> {
+        throw new Error("Not implemented")
+    }
+
+    fetchScraperJobLogs(_tenantID: string, _scraperJobID: string, _page: number, _pageSize: number): Promise<string[]> {
+        throw new Error("Not implemented")
+    }
 }
 
 export class DataLayerImpl implements DataLayer {
     private readonly currency: DataLoader<Currency["code"], Currency | null>
     private readonly currencyRate: DataLoader<CurrencyRateKey, CurrencyRate | null>
-    private readonly scraperParameterType: DataLoader<ScraperParameterType["id"], ScraperParameterType | null>
     private readonly scraperType: DataLoader<ScraperType["id"], ScraperType | null>
-    private readonly scraperTypeParameter: DataLoader<ScraperTypeParameterKey, ScraperTypeParameter | null>
-    private readonly scraperTypeParameters: DataLoader<ScraperType["id"], ScraperTypeParameter[]>
     private readonly scraper: DataLoader<ScraperKey, Scraper | null>
-    private readonly scraperParameters: DataLoader<ScraperKey, ScraperParameter[]>
     private readonly tenant: DataLoader<Tenant["id"], Tenant | null>
     private readonly account: DataLoader<AccountKey, Account | null>
 
@@ -351,17 +335,6 @@ export class DataLayerImpl implements DataLayer {
             { name: "currencyRate" },
         )
 
-        this.scraperParameterType = new DataLoader<ScraperParameterType["id"], ScraperParameterType | null>(
-            async (keys: readonly ScraperParameterType["id"][]): Promise<(ScraperParameterType | null)[]> => {
-                const rowsPerKey = new Map<Tenant["id"], ScraperParameterType | null>()
-                for (const k of keys) {
-                    rowsPerKey.set(k, await this.scrapersDAO.fetchScraperParameterType(k))
-                }
-                return keys.map(k => rowsPerKey.get(k) || null)
-            },
-            { name: "scraperParameterType" },
-        )
-
         this.scraperType = new DataLoader<ScraperType["id"], ScraperType | null>(
             async (keys: readonly ScraperType["id"][]): Promise<(ScraperType | null)[]> => {
                 const rowsPerKey = new Map<Tenant["id"], ScraperType | null>()
@@ -373,54 +346,15 @@ export class DataLayerImpl implements DataLayer {
             { name: "scraperType" },
         )
 
-        this.scraperTypeParameter = new DataLoader<ScraperTypeParameterKey, ScraperTypeParameter | null>(
-            async (keys: readonly ScraperTypeParameterKey[]): Promise<(ScraperTypeParameter | null)[]> => {
-                const rowsPerKey = new Map<ScraperTypeParameterKey, ScraperTypeParameter | null>()
-                for (const k of keys) {
-                    rowsPerKey.set(
-                        k,
-                        await this.scrapersDAO.fetchScraperTypeParameter(
-                            k.scraperTypeID,
-                            k.scraperTypeParameterID,
-                        ),
-                    )
-                }
-                return keys.map(k => rowsPerKey.get(k) || null)
-            },
-            { name: "scraperTypeParameter" },
-        )
-
-        this.scraperTypeParameters = new DataLoader<ScraperType["id"], ScraperTypeParameter[]>(
-            async (keys: readonly ScraperType["id"][]): Promise<(ScraperTypeParameter[])[]> => {
-                const rowsPerKey = new Map<ScraperType["id"], ScraperTypeParameter[]>()
-                for (const k of keys) {
-                    rowsPerKey.set(k, await this.scrapersDAO.fetchScraperTypeParameters(k))
-                }
-                return keys.map(k => rowsPerKey.get(k) || [])
-            },
-            { name: "scraperTypeParameters" },
-        )
-
         this.scraper = new DataLoader<ScraperKey, Scraper | null>(
             async (keys: readonly ScraperKey[]): Promise<(Scraper | null)[]> => {
                 const rowsPerKey = new Map<ScraperKey, Scraper | null>()
                 for (const k of keys) {
-                    rowsPerKey.set(k, await this.scrapersDAO.fetchScraper(k.tenantID, k.scraperTypeID, k.id))
+                    rowsPerKey.set(k, await this.scrapersDAO.fetchScraper(k.tenantID, k.id))
                 }
                 return keys.map(k => rowsPerKey.get(k) || null)
             },
             { name: "scraper" },
-        )
-
-        this.scraperParameters = new DataLoader<ScraperKey, ScraperParameter[]>(
-            async (keys: readonly ScraperKey[]): Promise<ScraperParameter[][]> => {
-                const rowsPerKey = new Map<ScraperKey, ScraperParameter[]>()
-                for (const k of keys) {
-                    rowsPerKey.set(k, await this.scrapersDAO.fetchScraperParameters(k.tenantID, k.scraperTypeID, k.id))
-                }
-                return keys.map(k => rowsPerKey.get(k) || [])
-            },
-            { name: "scraperParameters" },
         )
 
         this.tenant = new DataLoader<Tenant["id"], Tenant | null>(
@@ -470,13 +404,9 @@ export class DataLayerImpl implements DataLayer {
         return rate
     }
 
-    async createScraper(args: MutationCreateScraperArgs): Promise<Scraper> {
-        const row = await this.scrapersDAO.createScraper(args)
-        this.scraper.prime({
-            tenantID: args.tenantID,
-            scraperTypeID: args.scraperTypeID,
-            id: row.id,
-        }, row)
+    async upsertScraper(args: MutationUpsertScraperArgs): Promise<Scraper> {
+        const row = await this.scrapersDAO.upsertScraper(args)
+        this.scraper.prime({ tenantID: args.tenantID, id: row.id }, row)
         return row
     }
 
@@ -497,11 +427,16 @@ export class DataLayerImpl implements DataLayer {
 
     async deleteScraper(args: MutationDeleteScraperArgs): Promise<void> {
         const row = await this.scrapersDAO.deleteScraper(args)
-        this.scraper.clear({ tenantID: args.tenantID, scraperTypeID: args.scraperTypeID, id: args.id })
+        this.scraper.clear({ tenantID: args.tenantID, id: args.id })
         return row
     }
 
     async deleteTenant(args: MutationDeleteTenantArgs): Promise<void> {
+        const scrapers = await this.scrapersDAO.fetchScrapers(args.id)
+        for (let scraper of scrapers) {
+            await this.scrapersDAO.deleteScraper({ tenantID: args.id, id: scraper.id })
+        }
+
         const row = await this.tenantsDAO.deleteTenant(args)
         this.tenant.clear(args.id)
         this.account.clearAll()
@@ -593,16 +528,6 @@ export class DataLayerImpl implements DataLayer {
         return rootAccounts
     }
 
-    async fetchScraperParameterType(id: ScraperParameterType["id"]): Promise<ScraperParameterType | null> {
-        return this.scraperParameterType.load(id)
-    }
-
-    async fetchScraperParameterTypes(): Promise<ScraperParameterType[]> {
-        const parameterTypes = await this.scrapersDAO.fetchScraperParameterTypes()
-        parameterTypes.forEach(pt => this.scraperParameterType.prime(pt.id, pt))
-        return parameterTypes
-    }
-
     async fetchScraperType(scraperTypeID: ScraperType["id"]): Promise<ScraperType | null> {
         return this.scraperType.load(scraperTypeID)
     }
@@ -613,46 +538,14 @@ export class DataLayerImpl implements DataLayer {
         return scraperTypes
     }
 
-    async fetchScraperTypeParameter(
-        scraperTypeID: ScraperType["id"],
-        scraperTypeParameterID: ScraperTypeParameter["id"],
-    ): Promise<ScraperTypeParameter | null> {
-        return this.scraperTypeParameter.load({
-            scraperTypeID,
-            scraperTypeParameterID,
-        })
+    async fetchScraper(tenantID: Tenant["id"], id: Scraper["id"]): Promise<Scraper | null> {
+        return this.scraper.load({ tenantID, id })
     }
 
-    async fetchScraperTypeParameters(scraperTypeID: ScraperType["id"]): Promise<ScraperTypeParameter[]> {
-        const parameters = await this.scrapersDAO.fetchScraperTypeParameters(scraperTypeID)
-        parameters.forEach(p => this.scraperTypeParameter.prime({
-            scraperTypeID: scraperTypeID,
-            scraperTypeParameterID: p.id,
-        }, p))
-        this.scraperTypeParameters.prime(scraperTypeID, parameters)
-        return parameters
-    }
-
-    async fetchScraper(
-        tenantID: Tenant["id"],
-        scraperTypeID: ScraperType["id"],
-        id: Scraper["id"],
-    ): Promise<Scraper | null> {
-        return this.scraper.load({ tenantID, scraperTypeID, id })
-    }
-
-    async fetchScrapers(tenantID: Tenant["id"]): Promise<Scraper[]> {
-        return this.scrapersDAO.fetchScrapers(tenantID)
-    }
-
-    async fetchScraperParameters(
-        tenantID: Tenant["id"],
-        scraperTypeID: ScraperType["id"],
-        id: Scraper["id"],
-    ): Promise<ScraperParameter[]> {
-        const parameters = await this.scrapersDAO.fetchScraperParameters(tenantID, scraperTypeID, id)
-        this.scraperParameters.prime({ tenantID, scraperTypeID, id }, parameters)
-        return parameters
+    async fetchScrapers(tenantID: Tenant["id"], scraperTypeID?: ScraperType["id"]): Promise<Scraper[]> {
+        const scrapers = await this.scrapersDAO.fetchScrapers(tenantID, scraperTypeID)
+        scrapers.forEach(s => this.scraper.prime({ tenantID, id: s.id }, s))
+        return scrapers
     }
 
     async fetchTenants(args: QueryTenantsArgs): Promise<Tenant[]> {
@@ -689,5 +582,32 @@ export class DataLayerImpl implements DataLayer {
         )
         this.account.prime({ tenantID: args.tenantID, accountID: row.id }, row)
         return row
+    }
+
+    async fetchScraperJob(tenantID: Tenant["id"], id: ScraperJob["id"]): Promise<ScraperJob | null> {
+        return await this.scrapersDAO.fetchScraperJob(tenantID, id)
+    }
+
+    async fetchScraperJobs(tenantID: Tenant["id"], id: Scraper["id"]): Promise<ScraperJob[]> {
+        return await this.scrapersDAO.fetchScraperJobs(tenantID, id)
+    }
+
+    async triggerScraper(tenantID: Tenant["id"], scraperID: Scraper["id"]): Promise<ScraperJob> {
+        return await this.scrapersDAO.triggerScraper(tenantID, scraperID)
+    }
+
+    async setLastSuccessfulScrapedDate(
+        tenantID: Tenant["id"],
+        scraperID: Scraper["id"],
+        date: DateTime): Promise<DateTime> {
+        return await this.scrapersDAO.setLastSuccessfulScrapedDate(tenantID, scraperID, date)
+    }
+
+    async fetchScraperJobLogs(
+        tenantID: string,
+        scraperJobID: string,
+        page: number,
+        pageSize: number): Promise<string[]> {
+        return await this.scrapersDAO.fetchScraperJobLogs(tenantID, scraperJobID, page, pageSize)
     }
 }

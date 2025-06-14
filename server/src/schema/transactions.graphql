@@ -27,6 +27,14 @@ type Transaction {
     description: String!
     sourceAccount: Account!
     targetAccount: Account!
+    classification: TransactionClassification
+}
+
+type TransactionClassification {
+    sourceAccount: Account
+    targetAccount: Account
+    confidence: Float
+    reasoning: String
 }
 
 type TransactionsResult {

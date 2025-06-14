@@ -1,0 +1,46 @@
+{
+    "name": "scrapers",
+    "description": "GreenSTAR Scrapers",
+    "version": "0.0.0+local",
+    "private": true,
+    "license": "ISC",
+    "type": "module",
+    "author": {
+        "name": "Arik Kfir",
+        "email": "arik@kfirs.com",
+        "url": "https://github.com/arikkfir-org"
+    },
+    "scripts": {
+        "codegen": "graphql-codegen --config codegen.ts",
+        "scrape": "playwright test scrapers/${SCRAPER_TYPE_ID}/scraper.ts; npm run upload-trace; npm run upload-video",
+        "upload-trace": "curl -sSL -D /dev/stderr -X POST -F \"file=@./test-results/${SCRAPER_TYPE_ID}-scraper.ts-scrape-chromium/trace.zip\" \"${API_URL}/static/${TENANT_ID}/${SCRAPER_ID}/${JOB_NAME}\"",
+        "upload-video": "curl -sSL -D /dev/stderr -X POST -F \"file=@./test-results/${SCRAPER_TYPE_ID}-scraper.ts-scrape-chromium/video.webm\" \"${API_URL}/static/${TENANT_ID}/${SCRAPER_ID}/${JOB_NAME}\"",
+        "test": "jest"
+    },
+    "dependencies": {
+        "@graphql-typed-document-node/core": "^3.2.0",
+        "@kubernetes/client-node": "^1.3.0",
+        "@playwright/test": "^1.54.1",
+        "@urql/core": "^5.1.1",
+        "dotenv": "^16.5.0",
+        "graphql": "^16.11.0",
+        "luxon": "^3.6.1"
+    },
+    "devDependencies": {
+        "@graphql-codegen/cli": "^5.0.7",
+        "@graphql-codegen/schema-ast": "^4.1.0",
+        "@graphql-codegen/typescript": "^4.1.6",
+        "@graphql-codegen/typescript-document-nodes": "^4.0.16",
+        "@tsconfig/node23": "^23.0.2",
+        "@types/jest": "^29.5.12",
+        "@types/luxon": "^3.6.2",
+        "@types/node": "^24.0.0",
+        "jest": "^29.7.0",
+        "ts-jest": "^29.1.2",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.8.3"
+    },
+    "scarfSettings": {
+        "enabled": false
+    }
+}

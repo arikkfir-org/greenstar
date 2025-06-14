@@ -1,0 +1,16 @@
+.gridpage-table-content {
+  overflow: auto;
+  height: 100%;
+  width: 100%;
+}
+
+.gridpage-table-content .MuiDataGrid-root {
+  height: 100%;
+  width: 100%;
+}
+
+.actions-cell {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+}

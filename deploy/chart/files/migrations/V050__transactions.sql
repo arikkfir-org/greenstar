@@ -39,3 +39,30 @@ CREATE TABLE transactions
         )
 );
 GRANT SELECT, DELETE, INSERT, UPDATE ON TABLE transactions TO greenstar_server;
+
+CREATE TABLE transaction_classifications
+(
+    id                 TEXT        NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    created_at         TIMESTAMP WITH TIME ZONE         DEFAULT NOW(),
+    tenant_id          VARCHAR(10) NOT NULL,
+    transaction_id     TEXT        NOT NULL,
+    prompt             TEXT        NOT NULL CHECK ( CHAR_LENGTH(prompt) > 0 ),
+    raw_classification TEXT        NOT NULL CHECK ( CHAR_LENGTH(raw_classification) > 0 ),
+    source_account_id  TEXT        NOT NULL,
+    target_account_id  TEXT        NOT NULL,
+    confidence         FLOAT       NOT NULL,
+    reasoning          TEXT        NOT NULL,
+    CONSTRAINT fk_transaction_classifications_transaction_id
+        FOREIGN KEY (tenant_id, transaction_id)
+            REFERENCES transactions (tenant_id, id)
+            ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_transaction_classifications_source_account_id
+        FOREIGN KEY (tenant_id, source_account_id)
+            REFERENCES accounts (tenant_id, id)
+            ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_transaction_classifications_target_account_id
+        FOREIGN KEY (tenant_id, target_account_id)
+            REFERENCES accounts (tenant_id, id)
+            ON UPDATE CASCADE ON DELETE RESTRICT
+);
+GRANT SELECT, DELETE, INSERT, UPDATE ON TABLE transaction_classifications TO greenstar_server;

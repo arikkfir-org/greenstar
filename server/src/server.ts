@@ -3,6 +3,7 @@ import cors from "cors"
 import express from "express"
 import * as http from "node:http"
 import { Context } from "./context.js"
+import { initWebSocketServer } from "./websocket.js"
 import type { GraphQLRequestContextExecutionDidStart } from "@apollo/server"
 import {
     ApolloServer,
@@ -104,8 +105,12 @@ export async function startServer() {
     }
     const port = parseInt(process.env.PORT || "bad-port")
 
-    const expressApp   = express()
-    const httpServer   = http.createServer(expressApp)
+    const expressApp = express()
+    const httpServer = http.createServer(expressApp)
+
+    // Initialize WebSocket server
+    initWebSocketServer(httpServer)
+
     const apolloServer = new ApolloServer<Context>({
         typeDefs: TypeDefinitions,
         resolvers: GraphResolvers,

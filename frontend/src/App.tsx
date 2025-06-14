@@ -19,6 +19,7 @@ import { apolloClient } from "./util/ApolloClient.ts"
 import { LinkProps as MuiLinkProps } from "@mui/material/Link"
 import { LocalizationProvider } from "@mui/x-date-pickers-pro"
 import { AdapterLuxon } from "@mui/x-date-pickers-pro/AdapterLuxon"
+import { SnackbarProvider } from "notistack"
 
 // Remove "to" and "asChild" properties from Wouter's <Link> component props
 type CustomWouterLinkProps = Omit<Omit<WouterLinkProps, "to">, "asChild"> & { href: string }
@@ -107,6 +108,7 @@ export function App() {
                         <LoadingStateProvider ctx={LoadedSelectedLanguageStateCtx}>
                             <LoadingStateProvider ctx={LoadedCurrenciesStateCtx}>
                                 <LoadingStateProvider ctx={LoadedSelectedCurrencyStateCtx}>
+                                    <SnackbarProvider />
                                     <Layout />
                                 </LoadingStateProvider>
                             </LoadingStateProvider>
