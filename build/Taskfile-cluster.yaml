@@ -1,0 +1,153 @@
+version: 3
+
+includes:
+  tls:
+    dir: ../
+    internal: true
+    taskfile: Taskfile-tls.yaml
+  toolchain:
+    dir: ../
+    internal: true
+    taskfile: Taskfile-toolchain-{{OS}}.yaml
+
+tasks:
+
+  default:
+    deps: [ setup-traefik ]
+
+  create:
+    deps: [ toolchain:kind ]
+    sources:
+      - ./deploy/local/kind-cluster-config.yaml
+    cmd: kind create cluster --name "${CLUSTER_NAME}" --image=kindest/node:v1.33.1 --config=deploy/local/kind-cluster-config.yaml --wait "1m"
+    status:
+      - kind get clusters -q | grep -E "^${CLUSTER_NAME}\$"
+
+  setup-gateway-api:
+    deps: [ create ]
+    sources:
+      - ./deploy/local/gateway-api-crds.yaml
+    cmd: kubectl apply -f ./deploy/local/gateway-api-crds.yaml
+    status:
+      - kubectl get crd | grep gateway.networking.k8s.io
+
+  setup-traefik:
+    deps: [ setup-gateway-api, tls ]
+    sources:
+      - ./deploy/local/wildcard-tls-secret.local.yaml
+      - ./deploy/local/ingress-gateway.yaml
+      - ./deploy/local/traefik-values.yaml
+    cmds:
+      - |
+        helm upgrade --install traefik traefik \
+          --repo "https://traefik.github.io/charts" --version="v30.1.0" \
+          --create-namespace --namespace="ingress" \
+          -f deploy/local/traefik-values.yaml \
+          --wait
+      - kubectl apply --namespace=ingress -f ./deploy/local/wildcard-tls-secret.local.yaml
+      - kubectl apply --namespace=ingress -f ./deploy/local/ingress-gateway.yaml
+    status:
+      - helm --namespace=ingress get metadata traefik
+
+  teardown:
+    deps: [ toolchain:kind ]
+    cmd: kind delete cluster --name "${CLUSTER_NAME}"
+    status:
+      - test "$(kind get clusters --quiet 2>/dev/null | grep -E "^${CLUSTER_NAME}\$"| wc -l | sed 's/^[ \t]*//')" = "0"
+
+  setup-kube-state-metrics:
+    deps: [ create ]
+    cmds:
+      - |
+        helm upgrade --install kube-state-metrics kube-state-metrics \
+          --repo https://prometheus-community.github.io/helm-charts \
+          --create-namespace \
+          --namespace=observability \
+          --values ./deploy/local/kube-state-metrics-values.yaml \
+          --wait
+    sources:
+      - ./deploy/local/kube-state-metrics-values.yaml
+    status:
+      - helm --namespace=observability get metadata kube-state-metrics
+
+  setup-metrics-server:
+    deps: [ create ]
+    cmd: |
+      helm upgrade --install metrics-server metrics-server \
+        --repo https://kubernetes-sigs.github.io/metrics-server \
+        --create-namespace \
+        --namespace=observability \
+        --set 'args={"--kubelet-insecure-tls"}' \
+        --wait
+    status:
+      - helm --namespace=observability get metadata metrics-server
+
+  setup-prometheus:
+    deps: [ create ]
+    cmds:
+      - |
+        helm upgrade --install prometheus prometheus \
+          --repo https://prometheus-community.github.io/helm-charts \
+          --create-namespace \
+          --namespace=observability \
+          --values ./deploy/local/prometheus-values.yaml \
+          --wait
+      - kubectl apply --namespace=observability -f ./deploy/local/prometheus-routes.yaml
+    sources:
+      - ./deploy/local/prometheus-values.yaml
+      - ./deploy/local/prometheus-routes.yaml
+    status:
+      - helm --namespace=observability get metadata prometheus
+
+  setup-prometheus-node-exporter:
+    deps: [ create ]
+    cmd: |
+      helm upgrade --install prometheus-node-exporter prometheus-node-exporter \
+        --repo https://prometheus-community.github.io/helm-charts \
+        --create-namespace \
+        --namespace=observability \
+        --values ./deploy/local/prometheus-node-exporter-values.yaml \
+        --wait
+    sources:
+      - ./deploy/local/prometheus-node-exporter-values.yaml
+    status:
+      - helm --namespace=observability get metadata prometheus-node-exporter
+
+  setup-jaeger:
+    deps: [ create ]
+    cmds:
+      - kubectl get namespace observability || kubectl create namespace observability
+      - kubectl apply --namespace=observability -f deploy/local/jaeger.yaml
+    sources:
+      - deploy/local/jaeger.yaml
+    status:
+      - kubectl diff --namespace=observability -f deploy/local/jaeger.yaml
+
+  setup-grafana:
+    deps: [ create ]
+    cmds:
+      - kubectl get namespace observability || kubectl create namespace observability
+      - kustomize build deploy/local/grafana | kubectl apply -f - --namespace observability
+      - |
+        helm upgrade --install grafana grafana \
+          --repo https://grafana.github.io/helm-charts \
+          --create-namespace \
+          --namespace=observability \
+          --values ./deploy/local/grafana-values.yaml \
+          --wait
+    sources:
+      - ./deploy/local/grafana-values.yaml
+      - ./deploy/local/grafana/kustomization.yaml
+      - ./deploy/local/grafana/dashboards/*.json
+    status:
+      - helm --namespace=observability get metadata grafana
+
+  setup-observability:
+    deps:
+      - create
+      - setup-kube-state-metrics
+      - setup-metrics-server
+      - setup-prometheus-node-exporter
+      - setup-prometheus
+      - setup-jaeger
+      - setup-grafana

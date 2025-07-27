@@ -1,0 +1,55 @@
+version: 3
+
+includes:
+  darwin:
+    dir: ../
+    internal: true
+    taskfile: Taskfile-toolchain-darwin.yaml
+  linux:
+    dir: ../
+    internal: true
+    taskfile: Taskfile-toolchain-linux.yaml
+
+run: when_changed
+
+tasks:
+
+  default:
+    deps: [ setup-darwin, setup-linux ]
+    cmds:
+      - mkcert -cert-file deploy/local/wildcard-tls.local.crt -key-file deploy/local/wildcard-tls.local.key "${DOMAIN}" "*.app.${DOMAIN}" "*.${DOMAIN}" "localhost" "127.0.0.1" "::1"
+      - kubectl create secret tls wildcard-tls --cert=deploy/local/wildcard-tls.local.crt --key=deploy/local/wildcard-tls.local.key --dry-run=client --output=yaml > deploy/local/wildcard-tls-secret.local.yaml
+    status:
+      - test -f deploy/local/wildcard-tls.local.crt
+      - test -f deploy/local/wildcard-tls.local.key
+      - test -f deploy/local/wildcard-tls-secret.local.yaml
+
+  setup-darwin:
+    internal: true
+    platforms: [ darwin ]
+    deps: [ darwin:mkcert ]
+    requires:
+      vars:
+        - DOMAIN
+    cmd: mkcert -install
+    status:
+      - test -f "$(mkcert -CAROOT)/rootCA.pem"
+      - test -f "$(mkcert -CAROOT)/rootCA-key.pem"
+
+  setup-linux:
+    internal: true
+    platforms: [ linux ]
+    deps: [ linux:mkcert ]
+    requires:
+      vars:
+        - DOMAIN
+    cmds:
+      - sudo apt install -y libnss3-tools
+      - mkcert -install
+      - sudo cp "$(mkcert -CAROOT)/rootCA.pem" /usr/local/share/ca-certificates/
+      - mkdir -pv ${HOME}/.pki/nssdb
+      - certutil -d sql:${HOME}/.pki/nssdb -A -t "C,," -n "${DOMAIN}" -i /usr/local/share/ca-certificates/rootCA.pem
+      - cat "/usr/local/share/ca-certificates/rootCA.pem" | sudo tee -a /etc/ssl/certs/ca-certificates.crt
+    status:
+      - test -f "$(mkcert -CAROOT)/rootCA.pem"
+      - test -f "$(mkcert -CAROOT)/rootCA-key.pem"
