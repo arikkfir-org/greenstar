@@ -1,6 +1,10 @@
 version: 3
 
 includes:
+  dns:
+    dir: ../
+    internal: true
+    taskfile: Taskfile-dns.yaml
   tls:
     dir: ../
     internal: true
@@ -32,7 +36,7 @@ tasks:
       - kubectl get crd | grep gateway.networking.k8s.io
 
   setup-traefik:
-    deps: [ setup-gateway-api, tls ]
+    deps: [ setup-gateway-api, dns, tls ]
     sources:
       - ./deploy/local/wildcard-tls-secret.local.yaml
       - ./deploy/local/ingress-gateway.yaml

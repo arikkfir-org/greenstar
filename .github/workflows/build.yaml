@@ -154,12 +154,6 @@ jobs:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup DNS
-        run: task dns
-
-      - name: Setup TLS
-        run: task tls
-
       - name: Setup Cluster
         id: setup-cluster
         run: task cluster
@@ -194,7 +188,7 @@ jobs:
         env:
           VERSION: "0.0.0+${{ github.sha }}"
         run: |
-          task setup-tenants-values-file
+          task dev:setup-tenants-values-file
           helm install greenstar oci://ghcr.io/${{ github.repository }}/greenstar \
               --version "${VERSION}" \
               --create-namespace -n greenstar \
@@ -250,7 +244,7 @@ jobs:
           include-hidden-files: true
 
       - name: Teardown
-        run: task teardown-cluster
+        run: task cluster:teardown
         if: success() || steps.setup-cluster.outcome == 'success' || steps.setup-cluster.outcome == 'failure'
 
       - name: Setup Google Cloud SDK
