@@ -24,6 +24,8 @@ includes:
     taskfile: build/Taskfile-github.yaml
   graphql:
     taskfile: build/Taskfile-graphql.yaml
+  helm:
+    taskfile: build/Taskfile-helm.yaml
   test:
     taskfile: build/Taskfile-test.yaml
   tls:
