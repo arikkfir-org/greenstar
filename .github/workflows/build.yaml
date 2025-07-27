@@ -185,7 +185,7 @@ jobs:
             done
           done
           while true; do
-            if helm show chart "oci://ghcr.io/${{ github.repository }}" --version "0.0.0+${{ github.sha }}" >/dev/null 2>&1; then
+            if helm show chart "oci://ghcr.io/${{ github.repository }}/greenstar" --version "0.0.0+${{ github.sha }}" >/dev/null 2>&1; then
               break
             fi
           done
@@ -195,7 +195,7 @@ jobs:
           VERSION: "0.0.0+${{ github.sha }}"
         run: |
           task setup-tenants-values-file
-          helm install greenstar oci://ghcr.io/${{ github.repository }} \
+          helm install greenstar oci://ghcr.io/${{ github.repository }}/greenstar \
               --version "${VERSION}" \
               --create-namespace -n greenstar \
               -f ./deploy/local/chart-ci-values.yaml \
