@@ -41,12 +41,14 @@ export class TransactionsDataAccessLayer {
 
     async createTransaction(tx: CreateTransaction): Promise<Transaction> {
         const res = await this.pg.query(`
-            INSERT INTO transactions (date, reference_id, amount, currency, description, source_account_id,
+            INSERT INTO transactions (date, sequence, reference_id, amount, currency, description, source_account_id,
                                       target_account_id, tenant_id)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            ON CONFLICT ON CONSTRAINT uq_transactions DO UPDATE SET sequence = excluded.sequence
             RETURNING transactions.id AS id
         `, [
             tx.date.toJSDate(),
+            tx.sequence,
             tx.referenceID || "",
             tx.amount,
             tx.currency,
@@ -79,6 +81,7 @@ export class TransactionsDataAccessLayer {
                            t.created_at,
                            t.updated_at,
                            t.date,
+                           t.sequence,
                            t.reference_id,
                            t.amount,
                            t.currency,
@@ -184,6 +187,7 @@ export class TransactionsDataAccessLayer {
                            t.created_at,
                            t.updated_at,
                            t.date,
+                           t.sequence,
                            t.reference_id,
                            t.amount,
                            t.currency,
