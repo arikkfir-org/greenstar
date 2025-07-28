@@ -21,8 +21,6 @@ jobs:
       matrix:
         module: [ acme, frontend, ratesjob, server ]
       fail-fast: true
-    permissions:
-      contents: read
     steps:
 
       - name: Checkout
@@ -48,7 +46,7 @@ jobs:
         working-directory: ${{ matrix.module }}
 
       - name: Generate
-        run: task generate-graphql-${{ matrix.module }}
+        run: task graphql:${{ matrix.module }}
 
       - name: Verify
         run: git diff --compact-summary --exit-code
@@ -116,26 +114,25 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Setup Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Setup Helm
         uses: azure/setup-helm@v4
 
       - name: Login to GHCR
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Package Helm chart
-        run: |
-          yq -i ".acme.image.tag = \"${IMAGES_TAG}\"" deploy/chart/values.yaml
-          yq -i ".frontend.image.tag = \"${IMAGES_TAG}\"" deploy/chart/values.yaml
-          yq -i ".ratesjob.image.tag = \"${IMAGES_TAG}\"" deploy/chart/values.yaml
-          yq -i ".server.image.tag = \"${IMAGES_TAG}\"" deploy/chart/values.yaml
-          helm package ./deploy/chart --app-version "${VERSION}" --version "${VERSION}"
+        run: task helm:package
         env:
-          IMAGES_TAG: ${{ github.sha }}
+          IMAGE: ${{ github.sha }}
 
       - name: Push Helm Chart
-        run: |
-          helm push *.tgz oci://ghcr.io/${{ github.repository_owner }}
+        run: task helm:push
 
   test-e2e:
     name: Run End-to-End Tests
@@ -151,40 +148,21 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup Certificates
-        env:
-          MKCERT_ROOT_CA_PEM: ${{ secrets.MKCERT_ROOT_CA_PEM }}
-          MKCERT_SERVER_CERT_PEM: ${{ secrets.MKCERT_SERVER_CERT_PEM }}
-          MKCERT_SERVER_KEY_PEM: ${{ secrets.MKCERT_SERVER_KEY_PEM }}
-        run: |
-          sudo apt install -y libnss3-tools
-          echo -n "${MKCERT_ROOT_CA_PEM}" | base64 --decode > ./deploy/local/greenstar-ca.crt
-          sudo mv -v ./deploy/local/greenstar-ca.crt /usr/local/share/ca-certificates/greenstar-ca.crt
-          echo -n "${MKCERT_SERVER_CERT_PEM}" | base64 --decode > ./deploy/local/wildcard-tls.local.crt
-          echo -n "${MKCERT_SERVER_KEY_PEM}" | base64 --decode > ./deploy/local/wildcard-tls.local.key
-          mkdir -p ${HOME}/.pki/nssdb
-          certutil -d sql:${HOME}/.pki/nssdb -A -t "C,," -n greenstar.test -i /usr/local/share/ca-certificates/greenstar-ca.crt
-          cat /usr/local/share/ca-certificates/greenstar-ca.crt | sudo tee -a /etc/ssl/certs/ca-certificates.crt
-
       - name: Setup Task
         uses: arduino/setup-task@v2
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup DNS
-        run: task setup-domain-dns
+      - name: Setup Cluster
+        id: setup-cluster
+        run: task cluster
 
       - name: Setup Helm
         uses: azure/setup-helm@v4.2.0
 
       - name: Login to GHCR
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
-
-      - name: Setup Cluster
-        id: setup-cluster
-        run: task setup-gateway
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Wait for packages to be available
         timeout-minutes: 5
@@ -201,7 +179,7 @@ jobs:
             done
           done
           while true; do
-            if helm show chart "oci://ghcr.io/${{ github.repository_owner }}/greenstar" --version "0.0.0+${{ github.sha }}" >/dev/null 2>&1; then
+            if helm show chart "oci://ghcr.io/${{ github.repository }}/greenstar" --version "0.0.0+${{ github.sha }}" >/dev/null 2>&1; then
               break
             fi
           done
@@ -210,13 +188,13 @@ jobs:
         env:
           VERSION: "0.0.0+${{ github.sha }}"
         run: |
-          task setup-tenants-values-file
-          helm install greenstar oci://ghcr.io/${{ github.repository_owner }}/greenstar \
+          task dev:setup-tenants-values-file
+          helm install greenstar oci://ghcr.io/${{ github.repository }}/greenstar \
               --version "${VERSION}" \
               --create-namespace -n greenstar \
               -f ./deploy/local/chart-ci-values.yaml \
               -f ./hack/greenstar-tenants-values.yaml \
-              --wait --wait-for-jobs --debug
+              --wait --wait-for-jobs --debug --timeout=2m
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -266,7 +244,7 @@ jobs:
           include-hidden-files: true
 
       - name: Teardown
-        run: task teardown-cluster
+        run: task cluster:teardown
         if: success() || steps.setup-cluster.outcome == 'success' || steps.setup-cluster.outcome == 'failure'
 
       - name: Setup Google Cloud SDK
