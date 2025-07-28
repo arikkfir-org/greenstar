@@ -16,6 +16,9 @@ tasks:
   acme:
     deps: [ { task: generate-dir, vars: { DIR: acme } } ]
 
+  e2e:
+    deps: [ { task: generate-dir, vars: { DIR: e2e } } ]
+
   frontend:
     deps: [ { task: generate-dir, vars: { DIR: frontend } } ]
 
