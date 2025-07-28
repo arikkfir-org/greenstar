@@ -25,6 +25,7 @@ type Tenant {
     firstTransactionDate: DateTime
     lastTransactionDate: DateTime
     totalTransactions: Int!
+    transaction(id: ID!): Transaction
     transactions(
         since: DateTime
         until: DateTime

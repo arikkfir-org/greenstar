@@ -147,6 +147,8 @@ export interface DataLayer {
 
     fetchTenant(id: Tenant["id"]): Promise<Tenant | null>
 
+    fetchTransaction(tenantID: Tenant["id"], txID: Transaction["id"]): Promise<Transaction | null>
+
     fetchTransactions(tenantID: Tenant["id"],
         direction: TransactionsKey["direction"],
         args: TenantTransactionsArgs): Promise<TransactionsResult>
@@ -267,6 +269,10 @@ export class NoOpDataLayer {
     }
 
     fetchScraperTypeParameters(scraperTypeID: ScraperType["id"]): Promise<ScraperTypeParameter[]> {
+        throw new Error("Not implemented")
+    }
+
+    fetchTransaction(_tenantID: Tenant["id"], _txID: Transaction["id"]): Promise<Transaction | null> {
         throw new Error("Not implemented")
     }
 
@@ -746,6 +752,10 @@ export class DataLayerImpl implements DataLayer {
 
     async fetchTenant(id: Tenant["id"]): Promise<Tenant | null> {
         return this.tenant.load(id)
+    }
+
+    async fetchTransaction(tenantID: Tenant["id"], txID: Transaction["id"]): Promise<Transaction | null> {
+        return await this.transaction.load({tenantID, txID})
     }
 
     async fetchTransactions(
