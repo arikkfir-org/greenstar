@@ -20,6 +20,7 @@ type Transaction {
     createdAt: DateTime!
     updatedAt: DateTime!
     date: DateTime!
+    sequence: Int!
     referenceID: String!
     amount: Float!
     currency: Currency!
@@ -41,6 +42,7 @@ extend type Mutation {
 input CreateTransaction {
     tenantID: ID!
     date: DateTime!
+    sequence: Int!
     referenceID: String!
     amount: Float!
     currency: String!
