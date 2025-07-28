@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM mcr.microsoft.com/playwright:v1.53.2-noble AS production
+FROM mcr.microsoft.com/playwright:v1.54.1-noble AS production
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci

@@ -203,6 +203,8 @@ jobs:
         run: |
           for f in monocart-report playwright-report test-results; do mkdir -p $f && touch $f/.dont-delete-me; done
           docker run --network host \
+                     --init \
+                     --ipc=host \
                      -e CI=1 \
                      -v $(pwd)/playwright-report:/app/playwright-report \
                      -v $(pwd)/test-results:/app/test-results \
