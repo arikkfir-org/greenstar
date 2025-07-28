@@ -1,0 +1,44 @@
+version: 3
+
+includes:
+  cluster:
+    dir: ../
+    internal: true
+    taskfile: Taskfile-cluster.yaml
+  toolchain:
+    dir: ../
+    internal: true
+    taskfile: Taskfile-toolchain-{{OS}}.yaml
+
+tasks:
+
+  default:
+    deps: [ skaffold ]
+
+  setup-tenants-values-file:
+    deps: [ toolchain:yq ]
+    sources:
+      - ./deploy/local/acme/*.yaml
+    generates:
+      - ./hack/greenstar-tenants-values.yaml
+    cmds:
+      - mkdir -pv hack
+      - rm -fv ./hack/greenstar-tenants-values.yaml
+      - touch ./hack/greenstar-tenants-values.yaml
+      - # noinspection YAMLSchemaValidation
+        for: sources
+        cmd: |
+          export NAME="$(basename "{{ .ITEM }}")"
+          export CONTENT="$(cat "{{ .ITEM }}")"
+          yq -i '.acme.files += [{"name": env(NAME), "content": env(CONTENT)}]' ./hack/greenstar-tenants-values.yaml
+
+  skaffold:
+    deps: [ toolchain:skaffold, cluster, setup-tenants-values-file ]
+    cmds:
+      - touch ./hack/greenstar-frontend-values.yaml
+      - touch ./hack/greenstar-server-values.yaml
+      - skaffold dev --tail=false
+
+  docker-cleanup:
+    cmds:
+      - docker system prune --all --force --volumes

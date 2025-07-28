@@ -11,6 +11,7 @@ export const CreateTransaction = gql(`
     mutation CreateTransaction(
         $tenantID: ID!
         $date: DateTime!
+        $sequence: Int!
         $referenceID: String!
         $description: String!
         $amount: Float!
@@ -21,6 +22,7 @@ export const CreateTransaction = gql(`
         createTransaction(tx: {
             tenantID: $tenantID
             date: $date
+            sequence: $sequence
             referenceID: $referenceID
             description: $description
             amount: $amount
@@ -47,7 +49,7 @@ export async function generateAccountTransactions(tenantID: Tenant["id"], defaul
                 const targetAccountID = tx.targetAccountID
                 const result          = await graphQLClient.mutation<CreateTransactionMutation, CreateTransactionMutationVariables>(
                     CreateTransaction,
-                    { tenantID, date, referenceID, description, amount, currency, sourceAccountID, targetAccountID }).toPromise()
+                    { tenantID, date, sequence: 0, referenceID, description, amount, currency, sourceAccountID, targetAccountID }).toPromise()
                 if (result.error) {
                     throw result.error
                 }

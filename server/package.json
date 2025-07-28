@@ -8,7 +8,7 @@
     "author": {
         "name": "Arik Kfir",
         "email": "arik@kfirs.com",
-        "url": "https://github.com/arikkfir"
+        "url": "https://github.com/arikkfir-org"
     },
     "scripts": {
         "build": "./node_modules/.bin/tsc && cp -v src/schema/*.graphql ./dist/schema/",

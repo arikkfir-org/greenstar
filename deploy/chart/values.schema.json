@@ -3,6 +3,17 @@
     "type": "object",
     "additionalProperties": false,
     "properties": {
+        "cleanup": {
+            "type": "object",
+            "properties": {
+                "cronjobs": {
+                    "type": "boolean"
+                },
+                "jobs": {
+                    "type": "boolean"
+                }
+            }
+        },
         "ingress": {
             "type": "object",
             "additionalProperties": false,
@@ -22,6 +33,21 @@
                 },
                 "extraEnv": {
                     "$ref": "#/$defs/extraEnv"
+                },
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": ["name", "content"],
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "content": {
+                                "type": "object"
+                            }
+                        }
+                    }
                 },
                 "image": {
                     "$ref": "#/$defs/image"

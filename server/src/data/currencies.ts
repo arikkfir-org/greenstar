@@ -87,7 +87,7 @@ export class CurrenciesDataAccessLayer {
         const res = await this.pg.query(`
                     INSERT INTO rates (date, source_currency_code, target_currency_code, rate)
                     VALUES ($1, $2, $3, $4)
-                    ON CONFLICT ON CONSTRAINT pk_rates DO UPDATE SET rate = $4
+                    ON CONFLICT ON CONSTRAINT uq_rates DO UPDATE SET rate = $4
             `,
             [ date, sourceCurrencyCode, targetCurrencyCode, rate ])
 

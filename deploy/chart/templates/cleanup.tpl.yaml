@@ -58,6 +58,7 @@ subjects:
 
 ---
 
+{{- if or .Values.cleanup.cronjobs .Values.cleanup.jobs }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -88,8 +89,8 @@ spec:
             - /bin/sh
             - -c
             - |
-              kubectl delete cronjobs -n ${NS} -l ${SELECTOR} --ignore-not-found=true --wait
-              kubectl delete jobs -n ${NS} -l ${SELECTOR} --ignore-not-found=true --wait
+              {{ if .Values.cleanup.cronjobs }}kubectl delete cronjobs -n ${NS} -l ${SELECTOR} --ignore-not-found=true --wait{{- end }}
+              {{ if .Values.cleanup.jobs }}kubectl delete jobs -n ${NS} -l ${SELECTOR} --ignore-not-found=true --wait{{- end }}
           resources:
             limits:
               cpu: 500m
@@ -100,3 +101,4 @@ spec:
       restartPolicy: Never
       enableServiceLinks: false
       serviceAccountName: {{ $serviceAccountName | quote }}
+{{- end }}

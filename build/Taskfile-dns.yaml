@@ -1,0 +1,50 @@
+version: 3
+
+includes:
+  darwin:
+    dir: ../
+    internal: true
+    taskfile: Taskfile-toolchain-darwin.yaml
+  linux:
+    dir: ../
+    internal: true
+    taskfile: Taskfile-toolchain-linux.yaml
+
+tasks:
+
+  default:
+    deps: [ setup-darwin, setup-linux ]
+
+  setup-darwin:
+    internal: true
+    platforms: [ darwin ]
+    deps: [ darwin:dnsmasq ]
+    requires:
+      vars:
+        - DOMAIN
+    env:
+      sh: brew --prefix
+    cmds:
+      - grep -Fxq "conf-dir=${BREW}/etc/dnsmasq.d/,*.conf" "${BREW}/etc/dnsmasq.conf" || echo "conf-dir=${BREW}/etc/dnsmasq.d/,*.conf" >> "${BREW}/etc/dnsmasq.conf"
+      - grep -Fxq "address=/.${DOMAIN}/127.0.0.1" "${BREW}/etc/dnsmasq.d/${DOMAIN}.conf" || printf "address=/.${DOMAIN}/127.0.0.1" > "${BREW}/etc/dnsmasq.d/${DOMAIN}.conf"
+      - sudo "${BREW}/bin/brew" services restart dnsmasq
+      - sudo mkdir -p "/etc/resolver"
+      - sudo bash -c "printf "nameserver 127.0.0.1" > /etc/resolver/${DOMAIN}"
+    status:
+      - grep -Fxq "conf-dir=$(brew --prefix)/etc/dnsmasq.d/,*.conf" "$(brew --prefix)/etc/dnsmasq.conf"
+      - grep -Fxq "address=/.${DOMAIN}/127.0.0.1" "$(brew --prefix)/etc/dnsmasq.d/${DOMAIN}.conf"
+      - test -d /etc/resolver && grep -Fxq "nameserver 127.0.0.1" "/etc/resolver/${DOMAIN}"
+      - dig api.${DOMAIN}
+      - dig acme.app.${DOMAIN}
+
+  setup-linux:
+    internal: true
+    platforms: [ linux ]
+    cmds:
+      - echo "127.0.0.1 api.${DOMAIN}" | sudo tee -a /etc/hosts
+      - echo "127.0.0.1 acme.app.${DOMAIN}" | sudo tee -a /etc/hosts
+      - getent hosts "api.${DOMAIN}"
+      - getent hosts "acme.app.${DOMAIN}"
+    status:
+      - getent hosts "api.${DOMAIN}"
+      - getent hosts "acme.app.${DOMAIN}"

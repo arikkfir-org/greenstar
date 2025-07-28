@@ -1,0 +1,34 @@
+version: 3
+
+tasks:
+
+  dnsmasq: { platforms: [ darwin ], cmds: [ { task: brew, vars: { name: dnsmasq } } ] }
+  helm: { platforms: [ darwin ], cmds: [ { task: brew, vars: { name: helm } } ] }
+  gcloud:
+    platforms: [ darwin ]
+    cmd: brew install --cask google-cloud-sdk
+    status:
+      - which gcloud
+  gh: { platforms: [ darwin ], cmds: [ { task: brew, vars: { name: jq } } ] }
+  git: { platforms: [ darwin ], cmds: [ { task: brew, vars: { name: git } } ] }
+  jq: { platforms: [ darwin ], cmds: [ { task: brew, vars: { name: jq } } ] }
+  kind: { platforms: [ darwin ], cmds: [ { task: brew, vars: { name: kind } } ] }
+  kubectl: { platforms: [ darwin ], cmds: [ { task: brew, vars: { name: kubernetes-cli } } ] }
+  mkcert: { platforms: [ darwin ], cmds: [ { task: brew, vars: { name: mkcert } } ] }
+  node: { platforms: [ darwin ], cmds: [ { task: brew, vars: { name: node } } ] }
+  skaffold: { platforms: [ darwin ],  cmds: [ { task: brew, vars: { name: skaffold } } ] }
+  yq: { platforms: [ darwin ],  cmds: [ { task: brew, vars: { name: yq } } ] }
+
+  brew:
+    internal: true
+    platforms: [ darwin ]
+    requires:
+      vars: [ name ]
+    env:
+      NONINTERACTIVE: "1"
+    cmds:
+      - which brew || bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      - brew install -q {{.name}}
+    status:
+      - which brew
+      - brew ls {{.name}}

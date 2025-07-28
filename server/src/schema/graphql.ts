@@ -101,6 +101,7 @@ export type CreateTransaction = {
   date: Scalars['DateTime']['input'];
   description: Scalars['String']['input'];
   referenceID: Scalars['String']['input'];
+  sequence: Scalars['Int']['input'];
   sourceAccountID?: InputMaybe<Scalars['ID']['input']>;
   targetAccountID?: InputMaybe<Scalars['ID']['input']>;
   tenantID: Scalars['ID']['input'];
@@ -325,6 +326,7 @@ export type Tenant = {
   rootAccounts: Array<Account>;
   scrapers: Array<Scraper>;
   totalTransactions: Scalars['Int']['output'];
+  transaction?: Maybe<Transaction>;
   transactions: TransactionsResult;
   updatedAt: Scalars['DateTime']['output'];
 };
@@ -345,6 +347,11 @@ export type TenantAccountsBalanceOverTimeArgs = {
   currency: Scalars['String']['input'];
   endDate?: InputMaybe<Scalars['DateTime']['input']>;
   startDate?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
+
+export type TenantTransactionArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -376,6 +383,7 @@ export type Transaction = {
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   referenceID: Scalars['String']['output'];
+  sequence: Scalars['Int']['output'];
   sourceAccount: Account;
   targetAccount: Account;
   updatedAt: Scalars['DateTime']['output'];
@@ -679,6 +687,7 @@ export type TenantResolvers<ContextType = any, ParentType extends ResolversParen
   rootAccounts?: Resolver<Array<ResolversTypes['Account']>, ParentType, ContextType>;
   scrapers?: Resolver<Array<ResolversTypes['Scraper']>, ParentType, ContextType>;
   totalTransactions?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  transaction?: Resolver<Maybe<ResolversTypes['Transaction']>, ParentType, ContextType, RequireFields<TenantTransactionArgs, 'id'>>;
   transactions?: Resolver<ResolversTypes['TransactionsResult'], ParentType, ContextType, Partial<TenantTransactionsArgs>>;
   updatedAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -692,6 +701,7 @@ export type TransactionResolvers<ContextType = any, ParentType extends Resolvers
   description?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   referenceID?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  sequence?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   sourceAccount?: Resolver<ResolversTypes['Account'], ParentType, ContextType>;
   targetAccount?: Resolver<ResolversTypes['Account'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
