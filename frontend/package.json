@@ -32,7 +32,7 @@
         "@mui/x-tree-view-pro": "^8.5.2",
         "classnames": "^2.5.1",
         "graphql": "^16.11.0",
-        "luxon": "^3.6.1",
+        "luxon": "^3.7.1",
         "react": "^19.1.0",
         "react-dom": "^19.1.0",
         "wouter": "^3.7.1"
