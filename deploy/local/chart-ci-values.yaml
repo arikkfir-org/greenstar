@@ -1,3 +1,7 @@
+cleanup:
+  cronjobs: false
+  jobs: false
+
 ingress:
   domain: greenstar.test
 
@@ -10,6 +14,9 @@ server:
       namespace: ingress
       httpSectionName: web
       httpsSectionName: websecure
+  extraEnv:
+    OTEL_SDK_DISABLED:
+      value: "true"
 
 ratesjob:
   schedule: "0 * * * *"
@@ -30,9 +37,6 @@ frontend:
       httpsSectionName: websecure
 
 postgres:
-  extraArgs:
-    - -c
-    - log_statement=all
   ingress:
     enabled: true
     parentRef:

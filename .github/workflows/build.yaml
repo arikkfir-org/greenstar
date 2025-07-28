@@ -1,0 +1,336 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
+
+jobs:
+
+  verify-generated-code:
+    name: Verify ${{ matrix.module }} generated code
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        module: [ acme, frontend, ratesjob, server ]
+      fail-fast: true
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 23.x
+          cache: npm
+          cache-dependency-path: ${{ matrix.module }}/package-lock.json
+
+      - name: Node Dependencies
+        run: npm ci
+        working-directory: ${{ matrix.module }}
+
+      - name: Generate
+        run: task graphql:${{ matrix.module }}
+
+      - name: Verify
+        run: git diff --compact-summary --exit-code
+
+  build-images:
+    name: Build ${{ matrix.image }} image
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        image: [ acme, frontend, ratesjob, server ]
+      fail-fast: true
+    permissions:
+      contents: read
+      packages: write
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Docker Builder
+        uses: docker/setup-buildx-action@v3
+        with:
+          install: true
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          cache-from: |
+            type=registry,mode=max,ref=ghcr.io/${{ github.repository }}/${{ matrix.image }}-cache:${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || github.ref_name }}
+            type=registry,mode=max,ref=ghcr.io/${{ github.repository }}/${{ matrix.image }}-cache:main
+          cache-to: |
+            type=registry,mode=max,ref=ghcr.io/${{ github.repository }}/${{ matrix.image }}-cache:${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || github.ref_name }}
+          context: ${{ matrix.image }}
+          build-args: |
+            VERSION=0.0.0+${{ github.sha }}
+            VITE_GRAPHQL_API_URL=https://api.greenstar.test/graphql
+          target: ${{ matrix.image == 'frontend' && 'ci' || 'production' }}
+          push: true
+          tags: ghcr.io/${{ github.repository }}/${{ matrix.image }}:${{ github.sha }}
+
+  build-helm-package:
+    name: Build Helm chart
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.package.outputs.version }}
+    env:
+      VERSION: "0.0.0+${{ github.sha }}"
+    permissions:
+      contents: read
+      packages: write
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Package Helm chart
+        run: task helm:package
+        env:
+          IMAGE: ${{ github.sha }}
+
+      - name: Push Helm Chart
+        run: task helm:push
+
+  test-e2e:
+    name: Run End-to-End Tests
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Cluster
+        id: setup-cluster
+        run: task cluster
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4.2.0
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Wait for packages to be available
+        timeout-minutes: 5
+        run: |
+          for image in acme frontend ratesjob server; do
+            while true; do
+              PACKAGE_NAME="ghcr.io/${{ github.repository }}/${image}"
+              TAG="${{ github.sha }}"
+              if docker manifest inspect "${PACKAGE_NAME}:${TAG}" >/dev/null 2>&1; then
+                break
+              fi
+              echo "Package '${PACKAGE_NAME}:${TAG}' not found yet. Waiting 5 seconds..."
+              sleep 5
+            done
+          done
+          while true; do
+            if helm show chart "oci://ghcr.io/${{ github.repository }}/greenstar" --version "0.0.0+${{ github.sha }}" >/dev/null 2>&1; then
+              break
+            fi
+          done
+
+      - name: Install Helm package
+        env:
+          VERSION: "0.0.0+${{ github.sha }}"
+        run: |
+          task dev:setup-tenants-values-file
+          helm install greenstar oci://ghcr.io/${{ github.repository }}/greenstar \
+              --version "${VERSION}" \
+              --create-namespace -n greenstar \
+              -f ./deploy/local/chart-ci-values.yaml \
+              -f ./hack/greenstar-tenants-values.yaml \
+              --wait --wait-for-jobs --debug --timeout=2m
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 23.x
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Setup NPM dependencies
+        env:
+          NPM_CONFIG_FUND: false
+          NPM_CONFIG_AUDIT: false
+        run: npm ci
+        working-directory: e2e
+
+      - name: Setup Playwright dependencies
+        run: npm run deps
+        working-directory: e2e
+
+      - name: Run tests
+        id: test
+        env:
+          SSL_CERT_FILE: ./greenstar-ca.crt
+        run: npm run test
+        working-directory: e2e
+
+      - name: Export cluster state
+        id: export-cluster-state
+        if: success() || steps.setup-cluster.outcome == 'failure' || steps.setup-cluster.outcome == 'success'
+        run: |
+          kubectl cluster-info dump -o yaml --output-directory=./cluster-state -A
+          for ns in $(kubectl get namespaces -oname | cut -d '/' -f2); do
+            mkdir -p "./cluster-state/${ns}"
+            kubectl get jobs -o yaml -n "${ns}" > ./cluster-state/${ns}/jobs.yaml
+            kubectl get cronjobs -o yaml -n "${ns}" > ./cluster-state/${ns}/cronjobs.yaml
+            kubectl get gateways.gateway.networking.k8s.io -o yaml -n "${ns}" > ./cluster-state/${ns}/gateways.yaml
+            kubectl get httproutes.gateway.networking.k8s.io -o yaml -n "${ns}" > ./cluster-state/${ns}/httproutes.yaml
+            kubectl get tlsroutes.gateway.networking.k8s.io -o yaml -n "${ns}" > ./cluster-state/${ns}/tlsroutes.yaml
+          done
+
+      - name: Upload cluster state artifact
+        uses: actions/upload-artifact@v4
+        if: success() || steps.export-cluster-state.outcome == 'success'
+        with:
+          name: cluster-state
+          path: ./cluster-state
+          include-hidden-files: true
+
+      - name: Teardown
+        run: task cluster:teardown
+        if: success() || steps.setup-cluster.outcome == 'success' || steps.setup-cluster.outcome == 'failure'
+
+      - name: Setup Google Cloud SDK
+        if: success() || steps.test.outcome == 'success' || steps.test.outcome == 'failure'
+        uses: google-github-actions/auth@v2
+        env:
+          WORKLOAD_IDP: projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions/providers/github-oidc
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDP }}
+
+      - name: Upload artifact
+        if: success() || steps.test.outcome == 'success' || steps.test.outcome == 'failure'
+        uses: google-github-actions/upload-cloud-storage@v2
+        with:
+          process_gcloudignore: 'false'
+          path: ./e2e/monocart-report/
+          parent: false
+          destination: arikkfir-static-website/github/greenstar/${{ github.run_id }}/${{ github.run_attempt }}/
+
+      - name: Extract statistics
+        if: success() || steps.test.outcome == 'success' || steps.test.outcome == 'failure'
+        id: stats
+        run: |
+          echo "failed=$(jq '.summary.failed.value' < ./e2e/monocart-report//index.json)" >> "$GITHUB_OUTPUT"
+          echo "flaky=$(jq '.summary.flaky.value' < ./e2e/monocart-report//index.json)" >> "$GITHUB_OUTPUT"
+          echo "skipped=$(jq '.summary.skipped.value' < ./e2e/monocart-report//index.json)" >> "$GITHUB_OUTPUT"
+          echo "passed=$(jq '.summary.passed.value' < ./e2e/monocart-report//index.json)" >> "$GITHUB_OUTPUT"
+          echo "tests=$(jq '.summary.tests.value' < ./e2e/monocart-report//index.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Create contents
+        if: success() || steps.test.outcome == 'success' || steps.test.outcome == 'failure'
+        env:
+          FAILED: "${{ steps.stats.outputs.failed }}"
+          FLAKY: "${{ steps.stats.outputs.flaky }}"
+          SKIPPED: "${{ steps.stats.outputs.skipped }}"
+          PASSED: "${{ steps.stats.outputs.passed }}"
+          TESTS: "${{ steps.stats.outputs.tests }}"
+        run: |
+          cat > comment.txt <<EOF
+          ### ${{ steps.stats.outputs.failed == '0' && ':rocket:' || ':bangbang:' }} End-to-end tests ${{ steps.stats.outputs.failed == '0' && 'passed' || 'failed' }}!
+          
+          | Result                         | Count                                    |
+          |--------------------------------|------------------------------------------|
+          | :x: **Failed**                 | [${FAILED}][1]  |
+          | :interrobang: **Flaky**        | [${FLAKY}][2]   |
+          | :heavy_minus_sign: **Skipped** | [${SKIPPED}][3] |
+          | :white_check_mark: **Passed**  | [${PASSED}][4]  |
+          | **Total**                      | [${TESTS}][5]   |
+          
+          [1]: https://static.kfirs.com/github/greenstar/${{ github.run_id }}/${{ github.run_attempt }}/index.html#caseType=failed
+          [2]: https://static.kfirs.com/github/greenstar/${{ github.run_id }}/${{ github.run_attempt }}/index.html#caseType=flaky
+          [3]: https://static.kfirs.com/github/greenstar/${{ github.run_id }}/${{ github.run_attempt }}/index.html#caseType=skipped
+          [4]: https://static.kfirs.com/github/greenstar/${{ github.run_id }}/${{ github.run_attempt }}/index.html#caseType=passed
+          [5]: https://static.kfirs.com/github/greenstar/${{ github.run_id }}/${{ github.run_attempt }}/index.html
+          EOF
+
+      - name: Find Comment
+        if: github.event_name == 'pull_request' && (success() || steps.test.outcome == 'success' || steps.test.outcome == 'failure')
+        uses: peter-evans/find-comment@v3
+        id: fc
+        with:
+          issue-number: ${{ github.event.number }}
+          comment-author: 'github-actions[bot]'
+          body-regex: '^### .* End-to-end tests'
+
+      - name: Comment on PR
+        uses: peter-evans/create-or-update-comment@v4
+        if: github.event_name == 'pull_request' && (success() || steps.test.outcome == 'success' || steps.test.outcome == 'failure')
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.number }}
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          edit-mode: replace
+          body-file: comment.txt
+
+      - name: Comment on commit
+        uses: actions/github-script@v7
+        if: github.event_name == 'push' && (success() || steps.test.outcome == 'success' || steps.test.outcome == 'failure')
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            github.rest.repos.createCommitComment({ 
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: '${{ github.sha }}',
+              body: fs.readFileSync('comment.txt', 'utf8'),
+            })

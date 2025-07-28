@@ -6,16 +6,16 @@ description: |
 type: application
 version: 0.0.0-local
 appVersion: 0.0.0-local
-home: https://github.com/arikkfir/greenstar
+home: https://github.com/arikkfir-org/greenstar
 maintainers:
   - name: Arik Kfir
     email: arik@kfirs.com
-    url: https://github.com/arikkfir
-icon: https://raw.githubusercontent.com/arikkfir/greenstar/main/assets/logo.png
+    url: https://github.com/arikkfir-org
+icon: https://raw.githubusercontent.com/arikkfir-org/greenstar/main/assets/logo.png
 keywords:
   - money
   - finance
   - accounting
 deprecated: false
 sources:
-  - https://github.com/arikkfir/greenstar
+  - https://github.com/arikkfir-org/greenstar

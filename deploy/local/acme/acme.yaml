@@ -1,11 +1,6 @@
 id: acme
 displayName: A.C.M.E
 defaultCurrency: ILS
-scrapers:
-  - id: bankYahav
-    type: bankYahav
-    parameters:
-      accountID: primaryCheckingAccount
 accounts:
   - id: employers
     icon: |

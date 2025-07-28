@@ -7,8 +7,10 @@ CREATE TABLE accounts
     id           TEXT NOT NULL            DEFAULT gen_random_uuid(),
     created_at   TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at   TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    display_name TEXT NOT NULL CHECK (CHAR_LENGTH(display_name) > 0),
-    icon         TEXT NOT NULL CHECK (CHAR_LENGTH(icon) > 0),
+    display_name TEXT NOT NULL
+        CONSTRAINT val_display_name_length CHECK (CHAR_LENGTH(display_name) > 0),
+    icon         TEXT NOT NULL
+        CONSTRAINT val_icon_length CHECK (CHAR_LENGTH(icon) > 0),
     type         TEXT,
     parent_id    TEXT,
     PRIMARY KEY (tenant_id, id),

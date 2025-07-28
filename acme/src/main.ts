@@ -68,13 +68,17 @@ async function main() {
         }
 
         console.info(`Creating account transactions for tenant ${tenantData.id}...`)
-        for (let account of tenantData.accounts) {
-            await generateAccountTransactions(tenantData.id, tenantData.defaultCurrency, account)
+        if (tenantData.accounts && tenantData.accounts.length) {
+            for (let account of tenantData.accounts) {
+                await generateAccountTransactions(tenantData.id, tenantData.defaultCurrency, account)
+            }
         }
 
         console.info(`Creating scrapers for tenant ${tenantData.id}...`)
-        for (let scraper of tenantData.scrapers) {
-            await generateScraper(tenantData.id, scraper)
+        if (tenantData.scrapers && tenantData.scrapers.length) {
+            for (let scraper of tenantData.scrapers) {
+                await generateScraper(tenantData.id, scraper)
+            }
         }
 
         console.info(`Finished processing tenant ${tenantData.id}`)

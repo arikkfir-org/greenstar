@@ -324,6 +324,7 @@ export type Tenant = {
   rootAccounts: Array<Account>;
   scrapers: Array<Scraper>;
   totalTransactions: Scalars['Int']['output'];
+  transaction?: Maybe<Transaction>;
   transactions: TransactionsResult;
   updatedAt: Scalars['DateTime']['output'];
 };
@@ -344,6 +345,11 @@ export type TenantAccountsBalanceOverTimeArgs = {
   currency: Scalars['String']['input'];
   endDate?: InputMaybe<Scalars['DateTime']['input']>;
   startDate?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
+
+export type TenantTransactionArgs = {
+  id: Scalars['ID']['input'];
 };
 
 

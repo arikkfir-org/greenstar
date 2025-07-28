@@ -1,3 +1,7 @@
+cleanup:
+  jobs: false
+  cronjobs: false
+
 ingress:
   domain: greenstar.test
 
