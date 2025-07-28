@@ -7,7 +7,7 @@ updates:
     schedule:
       interval: weekly
     commit-message:
-      prefix: "deps(gha)"
+      prefix: "chore(ci)"
       include: scope
     labels:
       - dependencies
@@ -18,7 +18,7 @@ updates:
     schedule:
       interval: weekly
     commit-message:
-      prefix: "deps(acme)"
+      prefix: "chore(acme)"
     labels:
       - dependencies
   - package-ecosystem: npm
@@ -26,7 +26,7 @@ updates:
     schedule:
       interval: weekly
     commit-message:
-      prefix: "deps(e2e)"
+      prefix: "chore(e2e)"
     labels:
       - dependencies
   - package-ecosystem: npm
@@ -34,7 +34,7 @@ updates:
     schedule:
       interval: weekly
     commit-message:
-      prefix: "deps(frontend)"
+      prefix: "chore(frontend)"
     labels:
       - dependencies
   - package-ecosystem: npm
@@ -42,7 +42,7 @@ updates:
     schedule:
       interval: weekly
     commit-message:
-      prefix: "deps(ratesjob)"
+      prefix: "chore(ratesjob)"
     labels:
       - dependencies
   - package-ecosystem: npm
@@ -50,7 +50,7 @@ updates:
     schedule:
       interval: weekly
     commit-message:
-      prefix: "deps(server)"
+      prefix: "chore(server)"
     labels:
       - dependencies
 
