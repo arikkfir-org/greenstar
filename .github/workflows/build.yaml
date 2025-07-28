@@ -196,6 +196,9 @@ jobs:
               -f ./hack/greenstar-tenants-values.yaml \
               --wait --wait-for-jobs --debug --timeout=2m
 
+      - name: Download e2e image
+        run: docker pull ghcr.io/${{ github.repository }}/e2e:${{ github.sha }}
+
       - name: Run tests
         id: test
         env:
