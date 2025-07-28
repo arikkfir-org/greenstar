@@ -206,6 +206,9 @@ jobs:
                      --init \
                      --ipc=host \
                      -e CI=1 \
+                     -v /usr/local/share/ca-certificates/rootCA.pem:/usr/local/share/ca-certificates/rootCA.pem \
+                     -v ${HOME}/.pki/nssdb:/root/.pki/nssdb \
+                     -v /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt \
                      -v $(pwd)/playwright-report:/app/playwright-report \
                      -v $(pwd)/test-results:/app/test-results \
                      -v $(pwd)/monocart-report:/app/monocart-report \
