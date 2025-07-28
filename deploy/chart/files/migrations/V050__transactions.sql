@@ -23,7 +23,6 @@ CREATE TABLE transactions
         CONSTRAINT fk_transactions_tenant_id
             REFERENCES tenants
             ON UPDATE CASCADE ON DELETE CASCADE,
-    PRIMARY KEY (tenant_id, id),
     CONSTRAINT fk_transactions_source_account_id
         FOREIGN KEY (tenant_id, source_account_id)
             REFERENCES accounts (tenant_id, id)
