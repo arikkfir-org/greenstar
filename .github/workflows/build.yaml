@@ -164,6 +164,9 @@ jobs:
       - name: Login to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
 
+      - name: Download e2e base layers
+        run: docker pull mcr.microsoft.com/playwright:v1.54.1-noble
+
       - name: Wait for packages to be available
         timeout-minutes: 5
         run: |
