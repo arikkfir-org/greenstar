@@ -11,7 +11,7 @@ run: when_changed
 tasks:
 
   default:
-    deps: [ acme, frontend, ratesjob, server ]
+    deps: [ acme, e2e, frontend, ratesjob, server ]
 
   acme:
     deps: [ { task: generate-dir, vars: { DIR: acme } } ]
