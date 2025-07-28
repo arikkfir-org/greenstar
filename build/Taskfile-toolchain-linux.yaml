@@ -1,0 +1,85 @@
+version: 3
+
+tasks:
+
+  helm:
+    cmd: curl -sSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+    status:
+      - which helm
+
+  gcloud:
+    cmd: curl https://sdk.cloud.google.com | bash
+    status:
+      - which gcloud
+
+  gh:
+    cmd: |
+      VERSION=$(curl -sSL https://api.github.com/repos/cli/cli/releases/latest | yq '.tag_name')
+      URL="https://github.com/cli/cli/releases/download/${VERSION}/gh_2.76.1_linux_amd64.tar.gz"
+      sudo curl -sSL -o /usr/local/bin/gh "${URL}" && sudo chmod +x /usr/local/bin/gh
+    status:
+      - which gh
+
+  git:
+    cmd: |
+      sudo apt install -y git
+    status:
+      - which git
+
+  jq:
+    platforms: [ linux ]
+    cmd: sudo apt install -y jq
+    status:
+      - which jq
+
+  kind:
+    platforms: [ linux ]
+    env:
+      URL: "https://kind.sigs.k8s.io/dl/v0.29.0/kind-linux-amd64"
+    cmd: sudo curl -sSL -o /usr/local/bin/kind "${URL}" && sudo chmod +x /usr/local/bin/kind
+    status:
+      - which kind
+
+  kubectl:
+    platforms: [ linux ]
+    cmds:
+      - RELEASE="$(curl -L -s https://dl.k8s.io/release/stable.txt)"
+      - curl -sSL -o /usr/local/bin/kubectl "https://dl.k8s.io/release/${RELEASE}/bin/linux/{{.ARCH}}/kubectl"
+      - chmod +x /usr/local/bin/kubectl
+    status:
+      - which kubectl
+
+  mkcert:
+    platforms: [ linux ]
+    env:
+      URL: "https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64"
+    cmds:
+      - sudo curl -sSL -o /usr/local/bin/mkcert "${URL}" && sudo chmod +x /usr/local/bin/mkcert
+    status:
+      - which mkcert
+
+  node:
+    platforms: [ linux ]
+    cmds:
+      - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+      - . "$HOME/.nvm/nvm.sh"
+      - nvm install 24
+    status:
+      - which node
+
+  skaffold:
+    platforms: [ linux ]
+    cmd: |
+      curl -sSL -o /usr/local/bin/skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
+      chmod +x /usr/local/bin/skaffold
+    status:
+      - which skaffold
+
+  yq:
+    platforms: [ linux ]
+    cmd: |
+      VERSION=$(curl -sSL https://api.github.com/repos/mikefarah/yq/releases/latest | yq '.tag_name')
+      URL="https://github.com/mikefarah/yq/releases/download/${VERSION}/yq_linux_amd64"
+      sudo curl -sSL -o /usr/local/bin/yq "${URL}" && sudo chmod +x /usr/local/bin/yq
+    status:
+      - which yq

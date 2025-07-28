@@ -1,0 +1,16 @@
+version: 3
+
+includes:
+  toolchain:
+    dir: ../
+    internal: true
+    taskfile: Taskfile-toolchain-{{OS}}.yaml
+
+run: when_changed
+
+tasks:
+
+  download-cluster-state:
+    deps: [ toolchain:gh, toolchain:git ]
+    cmds:
+      - ./scripts/download-cluster-state.sh {{.CLI_ARGS}}

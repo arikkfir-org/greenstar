@@ -4,6 +4,7 @@
 {{- $configMapName := printf "%s-%s" $prefix $componentName -}}
 {{- $tenantsConfigMapName := printf "%s-%s-tenants" $prefix $componentName -}}
 {{- /*------------------------------------------------------------------------------------------------------------*/ -}}
+{{- if .Values.acme.files }}
 ---
 
 apiVersion: v1
@@ -30,7 +31,10 @@ metadata:
     app.kubernetes.io/component: {{ $componentName | quote }}
   name: {{ $tenantsConfigMapName | quote }}
 data:
-{{ (.Files.Glob "files/tenants/*.yaml").AsConfig | indent 2 }}
+  {{- range .Values.acme.files }}
+  {{ .name }}: |
+    {{- toYaml .content | nindent 4 }}
+  {{- end }}
 
 ---
 
@@ -105,3 +109,4 @@ spec:
       restartPolicy: OnFailure
       enableServiceLinks: false
       serviceAccountName: {{ $serviceAccountName | quote }}
+{{- end }}

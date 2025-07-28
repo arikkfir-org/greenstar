@@ -2,8 +2,12 @@ import { defineConfig } from "vite"
 import svgr from "vite-plugin-svgr"
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({mode}) => ({
     build: {
+        minify: mode === 'ci' ? false : 'esbuild',
+        sourcemap: mode !== 'ci',
+        cssCodeSplit: mode !== 'ci',
+        reportCompressedSize: mode !== 'ci',
         rollupOptions: {
             onwarn: (warning, warn) => {
                 // Suppress "Module level directives cause errors when bundled" warnings
@@ -18,4 +22,4 @@ export default defineConfig({
     server: {
         allowedHosts: true,
     },
-})
+}))

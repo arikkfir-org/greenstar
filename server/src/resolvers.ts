@@ -10,6 +10,7 @@ import {
     ScraperType,
     ScraperTypeParameter,
     Tenant,
+    Transaction,
 } from "./schema/graphql.js"
 import { DateTimeScalar } from "./schema/scalars-luxon-datetime.js"
 import { VoidScalar } from "./schema/scalars-void.js"
@@ -142,6 +143,8 @@ export const GraphResolvers: Resolvers<Context> = {
             return summary.totalCount
         },
         scrapers: async (tenant, _args, ctx) => ctx.data.fetchScrapers(tenant.id),
+        transaction: async (tenant, args, ctx): Promise<Transaction | null> => ctx.data.fetchTransaction(tenant.id,
+            args.id),
     },
     Account: {
         parent: async (account, _args: any, ctx) => ctx.data.fetchAccount(

@@ -1,0 +1,35 @@
+name: PR Closed
+
+on:
+  pull_request:
+    types:
+      - closed
+
+defaults:
+  run:
+    shell: bash -exuo pipefail {0}
+
+jobs:
+
+  delete-pr-cache-images:
+    name: Delete PR Cache Images
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        image: [ acme, frontend, ratesjob, server ]
+      fail-fast: false
+    permissions:
+      packages: write
+    steps:
+      - name: Delete package version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          PACKAGE_NAME: ${{ matrix.image }}-cache
+          TAG: pr-${{ github.event.number }}
+        run: |
+          gh package version delete "${TAG}" \
+            --package "${PACKAGE_NAME}" \
+            --owner "${OWNER}" \
+            --package-type "container" \
+            --yes || echo "Package version ${TAG} not found or could not be deleted."

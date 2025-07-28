@@ -1,0 +1,27 @@
+version: 3
+
+includes:
+  cluster:
+    dir: ../
+    internal: true
+    taskfile: Taskfile-cluster.yaml
+  toolchain:
+    dir: ../
+    internal: true
+    taskfile: Taskfile-toolchain-{{OS}}.yaml
+
+tasks:
+
+  package:
+    requires:
+      vars: [ VERSION, IMAGE ]
+    cmds:
+      - yq -i ".acme.image.tag = \"${IMAGE}\"" deploy/chart/values.yaml
+      - yq -i ".frontend.image.tag = \"${IMAGE}\"" deploy/chart/values.yaml
+      - yq -i ".ratesjob.image.tag = \"${IMAGE}\"" deploy/chart/values.yaml
+      - yq -i ".server.image.tag = \"${IMAGE}\"" deploy/chart/values.yaml
+      - helm package ./deploy/chart --app-version "${VERSION}" --version "${VERSION}"
+
+  push:
+    cmds:
+      - helm push *.tgz oci://ghcr.io/arikkfir-org/greenstar
