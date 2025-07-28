@@ -100,6 +100,7 @@ export type CreateTransaction = {
   date: Scalars['DateTime']['input'];
   description: Scalars['String']['input'];
   referenceID: Scalars['String']['input'];
+  sequence: Scalars['Int']['input'];
   sourceAccountID?: InputMaybe<Scalars['ID']['input']>;
   targetAccountID?: InputMaybe<Scalars['ID']['input']>;
   tenantID: Scalars['ID']['input'];
@@ -381,6 +382,7 @@ export type Transaction = {
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   referenceID: Scalars['String']['output'];
+  sequence: Scalars['Int']['output'];
   sourceAccount: Account;
   targetAccount: Account;
   updatedAt: Scalars['DateTime']['output'];
