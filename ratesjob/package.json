@@ -27,7 +27,7 @@
         "@graphql-codegen/typescript-document-nodes": "^4.0.16",
         "@tsconfig/node23": "^23.0.2",
         "@types/luxon": "^3.6.2",
-        "@types/node": "^24.0.10",
+        "@types/node": "^24.1.0",
         "ts-node": "^10.9.2",
         "typescript": "^5.8.3"
     }
