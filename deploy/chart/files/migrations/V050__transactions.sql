@@ -19,9 +19,10 @@ CREATE TABLE transactions
         CONSTRAINT val_description_not_empty CHECK (CHAR_LENGTH(description) > 0),
     source_account_id TEXT       NOT NULL,
     target_account_id TEXT       NOT NULL,
-    tenant_id         TEXT       NOT NULL
+    tenant_id         VARCHAR(10) NOT NULL,
         CONSTRAINT fk_transactions_tenant_id
-            REFERENCES tenants
+            FOREIGN KEY (tenant_id)
+                REFERENCES tenants (id)
             ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT fk_transactions_source_account_id
         FOREIGN KEY (tenant_id, source_account_id)

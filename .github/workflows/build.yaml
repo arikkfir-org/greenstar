@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        module: [ acme, frontend, ratesjob, server ]
+        module: [ acme, e2e, frontend, ratesjob, server ]
       fail-fast: true
     steps:
 
@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        image: [ acme, frontend, ratesjob, server ]
+        image: [ acme, e2e, frontend, ratesjob, server ]
       fail-fast: true
     permissions:
       contents: read
@@ -154,24 +154,6 @@ jobs:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 23.x
-          cache: npm
-          cache-dependency-path: e2e/package-lock.json
-
-      - name: Setup NPM dependencies
-        env:
-          NPM_CONFIG_FUND: false
-          NPM_CONFIG_AUDIT: false
-        run: npm ci
-        working-directory: e2e
-
-      - name: Setup Playwright dependencies
-        run: npm run deps
-        working-directory: e2e
-
       - name: Setup Cluster
         id: setup-cluster
         run: task cluster
@@ -181,6 +163,9 @@ jobs:
 
       - name: Login to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Download e2e base layers
+        run: docker pull mcr.microsoft.com/playwright:v1.54.1-noble
 
       - name: Wait for packages to be available
         timeout-minutes: 5
@@ -214,11 +199,26 @@ jobs:
               -f ./hack/greenstar-tenants-values.yaml \
               --wait --wait-for-jobs --debug --timeout=2m
 
+      - name: Download e2e image
+        run: docker pull ghcr.io/${{ github.repository }}/e2e:${{ github.sha }}
+
       - name: Run tests
         id: test
         env:
           SSL_CERT_FILE: ./greenstar-ca.crt
-        run: npm run test
+        run: |
+          for f in monocart-report playwright-report test-results; do mkdir -p $f && touch $f/.dont-delete-me; done
+          docker run --network host \
+                     --init \
+                     --ipc=host \
+                     -e CI=1 \
+                     -v /usr/local/share/ca-certificates/rootCA.pem:/usr/local/share/ca-certificates/rootCA.pem \
+                     -v ${HOME}/.pki/nssdb:/root/.pki/nssdb \
+                     -v /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt \
+                     -v $(pwd)/playwright-report:/app/playwright-report \
+                     -v $(pwd)/test-results:/app/test-results \
+                     -v $(pwd)/monocart-report:/app/monocart-report \
+                     ghcr.io/${{ github.repository }}/e2e:${{ github.sha }}
         working-directory: e2e
 
       - name: Export cluster state

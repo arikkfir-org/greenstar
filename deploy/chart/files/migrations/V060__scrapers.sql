@@ -47,7 +47,7 @@ VALUES ('bankYahav', 'accountID', 'Checking Account', 'account');
 
 CREATE TABLE scrapers
 (
-    tenant_id       TEXT NOT NULL
+    tenant_id       VARCHAR(10) NOT NULL
         CONSTRAINT fk_scrapers_tenant_id
             REFERENCES tenants
             ON UPDATE CASCADE ON DELETE CASCADE,

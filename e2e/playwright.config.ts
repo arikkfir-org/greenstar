@@ -27,18 +27,22 @@ export default defineConfig({
         ],
     use: {
         baseURL: "https://acme.app.greenstar.test",
+        ignoreHTTPSErrors: false, //!!process.env.CI,
         screenshot: "on",
         trace: "on",
         video: "on",
     },
-    timeout: 120_000,
-    globalTimeout: 120_000,
+    expect: {
+        timeout: 1000 * 15,
+    },
+    timeout: 1000 * 60 * 5,
+    globalTimeout: 1000 * 60 * 10,
     projects: [
         {
-            name: "Google Chrome",
+            name: "chromium",
             use: {
                 ...devices["Desktop Chrome"],
-                channel: "chrome",
+                channel: 'chromium',
             },
         },
     ],
