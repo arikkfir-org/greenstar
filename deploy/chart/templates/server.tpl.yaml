@@ -172,6 +172,8 @@ spec:
               value: {{ "http://jaeger.observability.svc.cluster.local:4318" | quote }}
             - name: OTEL_TRACES_EXPORTER
               value: {{ "otlp" | quote }}
+            - name: DATA_PATH
+              value: "/var/lib/greenstar/data"
             - name: PORT
               value: "4000"
             - name: PGHOST
