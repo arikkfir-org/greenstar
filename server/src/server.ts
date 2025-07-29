@@ -120,11 +120,10 @@ export async function startServer() {
     const upload  = multer({ storage, limits: { fileSize: 1024 * 1024 * 256 } })
 
     expressApp.use(rateLimit({
-        windowMs: 60 * 1000,        // 15 minutes
-        limit: 100,                 // Limit each IP to 100 requests per `window` (here, per 15 minutes).
+        windowMs: 5 * 60 * 1000,    // 15 minutes
+        limit: 500,                 // Limit each IP to 100 requests per `window` (here, per 15 minutes).
         standardHeaders: "draft-8", // draft-6: `RateLimit-*` headers; draft-7 & draft-8: combined `RateLimit` header
         legacyHeaders: false,       // Disable the `X-RateLimit-*` headers.
-        ipv6Subnet: 56,             // Set to 60 or 64 to be less aggressive, or 52 or 48 to be more aggressive
     }))
 
     expressApp.use("/graphql",
