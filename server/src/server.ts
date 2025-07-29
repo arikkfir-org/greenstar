@@ -23,6 +23,12 @@ import { CurrenciesDataAccessLayer } from "./data/currencies.js"
 import { ScrapersDataAccessLayer } from "./data/scrapers.js"
 import { TenantsDataAccessLayer } from "./data/tenants.js"
 import { TransactionsDataAccessLayer } from "./data/transactions.js"
+import { config } from "./config.js"
+import multer from "multer"
+import fs from "fs"
+import { LargeObjectManager } from "pg-large-object"
+import { rateLimit } from "express-rate-limit"
+import sanitizeFilename from "sanitize-filename"
 
 function formatError(formattedError: GraphQLFormattedError, error: unknown): GraphQLFormattedError {
     if (formattedError.extensions?.code === ApolloServerErrorCode.INTERNAL_SERVER_ERROR) {
@@ -109,13 +115,144 @@ export async function startServer() {
     })
     await apolloServer.start()
 
+    console.info(`File uploads directory set to: ${config.uploads.path}`)
+    const storage = multer.diskStorage({ destination: config.uploads.path })
+    const upload  = multer({ storage, limits: { fileSize: 1024 * 1024 * 256 } })
+
+    expressApp.use(rateLimit({
+        windowMs: 60 * 1000,        // 15 minutes
+        limit: 100,                 // Limit each IP to 100 requests per `window` (here, per 15 minutes).
+        standardHeaders: "draft-8", // draft-6: `RateLimit-*` headers; draft-7 & draft-8: combined `RateLimit` header
+        legacyHeaders: false,       // Disable the `X-RateLimit-*` headers.
+        ipv6Subnet: 56,             // Set to 60 or 64 to be less aggressive, or 52 or 48 to be more aggressive
+    }))
+
     expressApp.use("/graphql",
         cors<cors.CorsRequest>(),
         express.json(),
-        // createPostgresPoolClientMiddleware(pgPool),
         expressMiddleware<Context>(apolloServer, {
             context: (): Promise<Context> => (Promise.resolve({ data: new NoOpDataLayer() })),
         }))
+
+    expressApp.get("/static/:tenantID/:fileName",
+        cors<cors.CorsRequest>(),
+        async (req, res) => {
+            const client = await pgPool.connect()
+            await client.query("BEGIN")
+            try {
+                const rs = await client.query(`
+                    SELECT id, data_oid, size, content_type
+                    FROM files AS f
+                    WHERE f.tenant_id = $1
+                      AND f.name = $2
+                `, [ req.params.tenantID, req.params.fileName ])
+
+                if (!rs.rows.length || !rs.rows[0].data_oid) {
+                    res.status(404).type("text/plain").send("Not found")
+                } else {
+                    const row               = rs.rows[0]
+                    const lom               = new LargeObjectManager({ pg: client })
+                    const [ _size, stream ] = await lom.openAndReadableStreamAsync(row.data_oid, 16384)
+
+                    res.status(200).type(row.content_type)
+
+                    await new Promise<void>((resolve, reject) => {
+                        stream.pipe(res)
+                        stream.on("finish", resolve)
+                        stream.on("error", reject)
+                        res.on("close", () => {
+                            stream.destroy(new Error("Client closed connection"))
+                        })
+                    })
+                }
+                await client.query("ROLLBACK")
+            } catch (e) {
+                console.error(`Error retrieving file: `, e)
+                res.status(500).type("text/plain").send("Internal server error")
+                await client.query("ROLLBACK")
+            } finally {
+                client.release()
+            }
+        },
+    )
+
+    expressApp.post("/static/:tenantID/files",
+        upload.any(),
+        async (req, res) => {
+            const tenantID = req.params.tenantID
+            if (!/^[a-zA-Z0-9_-]+$/.test(tenantID)) {
+                return res.status(400).type("text/plain").send("Invalid tenant ID.")
+            }
+
+            const files = req.files as Express.Multer.File[]
+            if (!files || !files.length) {
+                return res.status(400).type("text/plain").send("No files uploaded.")
+            }
+
+            const client = await pgPool.connect()
+            await client.query("BEGIN")
+            try {
+                const lom = new LargeObjectManager({ pg: client })
+                for (let file of files) {
+                    try {
+                        const fileName = sanitizeFilename(file.originalname)
+                        if (!fileName) {
+                            return res.status(400).type("text/plain").send(`Invalid file name: ${file.originalname}`)
+                        }
+
+                        const fileStream      = fs.createReadStream(file.path)
+                        const [ oid, stream ] = await lom.createAndWritableStreamAsync()
+                        await new Promise((resolve, reject) => {
+                            fileStream.pipe(stream)
+                            stream.on("finish", resolve)
+                            stream.on("error", reject)
+                        })
+
+                        const rs = await client.query(`
+                            INSERT INTO files (name, data_oid, size, content_type, tenant_id)
+                            VALUES ($1, $2, $3, $4, $5)
+                            ON CONFLICT ON CONSTRAINT uq_files DO UPDATE
+                                SET data_oid     = $2,
+                                    size         = $3,
+                                    content_type = $4
+                            RETURNING id
+                        `, [ fileName, oid, file.size, file.mimetype, tenantID ])
+                        if (rs.rowCount != 1) {
+                            console.error(`Incorrect number of rows affected by file upload: ${rs.rowCount}`)
+                            res.status(500).type("text/plain").send("Internal server error")
+                            await client.query("ROLLBACK")
+                        }
+                    } finally {
+                        try {
+                            await fs.promises.unlink(file.path)
+                        } catch (e) {
+                            console.error("Error deleting temp file: ", file.path, e)
+                        }
+                    }
+                }
+
+                await client.query("COMMIT")
+                res.status(201).type("text/plain").send(`${files.length} files uploaded successfully.`)
+
+            } catch (e) {
+                console.error(`Error retrieving file: `, e)
+                res.status(500).type("text/plain").send("Internal server error")
+                await client.query("ROLLBACK")
+
+            } finally {
+                client.release()
+            }
+        },
+    )
+
+    expressApp.use((error: any, _req: any, res: any, next: any) => {
+        if (error instanceof multer.MulterError) {
+            if (error.code === "LIMIT_FILE_SIZE") {
+                return res.status(413).type("text/plain").send("File is too large.")
+            }
+        }
+        next(error)
+    })
 
     httpServer.listen(port, () => console.log(`🚀 Server started!`))
 }
