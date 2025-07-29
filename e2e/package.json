@@ -10,6 +10,7 @@
     },
     "main": "index.js",
     "scripts": {
+        "codegen": "echo \"No-op.\"",
         "deps": "playwright install --with-deps",
         "test": "playwright test"
     },
