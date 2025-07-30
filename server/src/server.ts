@@ -185,7 +185,7 @@ export async function startServer() {
             }
 
             const files = req.files as Express.Multer.File[]
-            if (!files || !files.length || !Number.isInteger(files.length)) {
+            if (!files || !files.length || !Array.isArray(files) || !Number.isInteger(files.length)) {
                 return res.status(400).type("text/plain").send("No files uploaded.")
             }
 
