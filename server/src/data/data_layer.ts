@@ -575,9 +575,8 @@ export class DataLayerImpl implements DataLayer {
     }
 
     async deleteAccount(args: MutationDeleteAccountArgs): Promise<void> {
-        const row = await this.accountsDAO.deleteAccount(args.tenantID, args.id)
+        await this.accountsDAO.deleteAccount(args.tenantID, args.id)
         this.account.clear({ tenantID: args.tenantID, accountID: args.id })
-        return row
     }
 
     async deleteScraper(args: MutationDeleteScraperArgs): Promise<void> {
@@ -596,9 +595,8 @@ export class DataLayerImpl implements DataLayer {
     }
 
     async deleteTransaction(args: MutationDeleteTransactionArgs): Promise<void> {
-        const row = await this.transactionsDAO.deleteTransaction(args.tenantID, args.id)
+        await this.transactionsDAO.deleteTransaction(args.tenantID, args.id)
         this.transaction.clear({ tenantID: args.tenantID, txID: args.id })
-        return row
     }
 
     async fetchAccount(tenantID: Tenant["id"], accountID: Account["id"]): Promise<Account | null> {
@@ -755,7 +753,7 @@ export class DataLayerImpl implements DataLayer {
     }
 
     async fetchTransaction(tenantID: Tenant["id"], txID: Transaction["id"]): Promise<Transaction | null> {
-        return await this.transaction.load({tenantID, txID})
+        return await this.transaction.load({ tenantID, txID })
     }
 
     async fetchTransactions(

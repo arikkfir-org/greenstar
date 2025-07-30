@@ -136,12 +136,12 @@ export type Mutation = {
   createScraper: Scraper;
   createTenant: Tenant;
   createTransaction: Transaction;
-  deleteAccount?: Maybe<Scalars['Void']['output']>;
-  deleteScraper?: Maybe<Scalars['Void']['output']>;
+  deleteAccount: Scalars['Void']['output'];
+  deleteScraper: Scalars['Void']['output'];
   deleteTenant?: Maybe<Scalars['Void']['output']>;
-  deleteTransaction?: Maybe<Scalars['Void']['output']>;
+  deleteTransaction: Scalars['Void']['output'];
   moveAccount: Account;
-  noOp?: Maybe<Scalars['Void']['output']>;
+  noOp: Scalars['Void']['output'];
 };
 
 

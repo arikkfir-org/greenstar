@@ -47,6 +47,6 @@ extend type Mutation {
         icon: String,
         type: AccountType,
     ): Account!
-    deleteAccount(tenantID: ID!, id: ID!): Void
+    deleteAccount(tenantID: ID!, id: ID!): Void!
     moveAccount(tenantID: ID!, accountID: ID!, targetParentAccountID: ID): Account!
 }

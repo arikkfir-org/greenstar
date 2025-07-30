@@ -16,7 +16,7 @@ import { DateTimeScalar } from "./schema/scalars-luxon-datetime.js"
 import { VoidScalar } from "./schema/scalars-void.js"
 
 import { TransactionsSummaryResult } from "./data/transactions.js"
-import pkg from "../package.json" with { type: "json" };
+import pkg from "../package.json" with { type: "json" }
 
 export interface AccountRow extends Account {
     tenantID: Tenant["id"],
@@ -42,7 +42,8 @@ export interface ScraperParameterRow extends ScraperParameter {
 
 export const GraphResolvers: Resolvers<Context> = {
     Mutation: {
-        noOp: async (_: any, _args, _ctx) => null,
+        noOp: async (_: any, _args, _ctx) => {
+        },
         createAccount: async (_: any, args, ctx) => ctx.data.createAccount(args),
         createCurrencyRate: async (_: any, args, ctx) => ctx.data.createCurrencyRate(args),
         createScraper: async (_: any, args, ctx) => ctx.data.createScraper(args),
