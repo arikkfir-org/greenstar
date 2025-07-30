@@ -29,8 +29,6 @@ import multer from "multer"
 import fs from "fs"
 import { LargeObjectManager } from "pg-large-object"
 import { rateLimit } from "express-rate-limit"
-import path from "path"
-import * as os from "node:os"
 import sanitizeFilename from "sanitize-filename"
 
 function formatError(formattedError: GraphQLFormattedError, error: unknown): GraphQLFormattedError {
@@ -191,82 +189,68 @@ export async function startServer() {
                 return res.status(400).type("text/plain").send("Invalid tenant ID.")
             }
 
-            const scraperJobID = req.params.scraperJobID
-            if (!/^[a-zA-Z0-9_-]+$/.test(scraperJobID)) {
-                return res.status(400).type("text/plain").send("Invalid scraper job ID.")
-            }
-
-            const fileName = sanitizeFilename(`${scraperJobID}-${req.file.originalname}`)
-            if (!fileName) {
-                return res.status(400).type("text/plain").send("Invalid file name.")
-            }
-
-            const tempDir      = os.tmpdir()
-            const resolvedPath = path.resolve(req.file.path.replaceAll(/[\n\r]/g, ""))
-            if (!resolvedPath.startsWith(tempDir)) {
-                return res.status(400).type("text/plain").send("Invalid file path.")
+            const files = req.files as Express.Multer.File[]
+            if (!files || !files.length || !Array.isArray(files) || !Number.isInteger(files.length)) {
+                return res.status(400).type("text/plain").send("No files uploaded.")
             }
 
             const client = await pgPool.connect()
             await client.query("BEGIN")
             try {
-                const scrapersDAL = new ScrapersDataAccessLayer(client)
-                const scraper     = await scrapersDAL.fetchScraper(tenantID, req.params.scraperID)
-                if (!scraper) {
-                    return res.status(404).type("text/plain").send("Scraper not found.")
-                }
+                const lom = new LargeObjectManager({ pg: client })
+                for (let file of files) {
+                    const fileName = sanitizeFilename(file.originalname)
+                    if (!fileName) {
+                        return res.status(400).type("text/plain").send(`Invalid or empty file name`)
+                    }
 
-                const fileStream = fs.createReadStream(resolvedPath)
+                    try {
+                        const fileStream      = fs.createReadStream(file.path)
+                        const [ oid, stream ] = await lom.createAndWritableStreamAsync()
+                        await new Promise((resolve, reject) => {
+                            fileStream.pipe(stream)
+                            stream.on("finish", resolve)
+                            stream.on("error", reject)
+                        })
 
-                const lom             = new LargeObjectManager({ pg: client })
-                const [ oid, stream ] = await lom.createAndWritableStreamAsync()
-
-                await new Promise((resolve, reject) => {
-                    fileStream.pipe(stream)
-                    stream.on("finish", resolve)
-                    stream.on("error", reject)
-                })
-
-                const rs = await client.query(`
-                    INSERT INTO files (name, data_oid, size, content_type, tenant_id)
-                    VALUES ($1, $2, $3, $4, $5)
-                    ON CONFLICT ON CONSTRAINT uq_files DO UPDATE
-                        SET data_oid     = $2,
-                            size         = $3,
-                            content_type = $4
-                    RETURNING id
-                `, [ fileName, oid, req.file.size, req.file.mimetype, tenantID ])
-                if (rs.rowCount != 1) {
-                    console.error(`Incorrect number of rows affected by file upload: ${rs.rowCount}`)
-                    res.status(500).type("text/plain").send("Internal server error")
-                    await client.query("ROLLBACK")
+                        const rs = await client.query(`
+                            INSERT INTO files (name, data_oid, size, content_type, tenant_id)
+                            VALUES ($1, $2, $3, $4, $5)
+                            ON CONFLICT ON CONSTRAINT uq_files DO UPDATE
+                                SET data_oid     = $2,
+                                    size         = $3,
+                                    content_type = $4
+                            RETURNING id
+                        `, [ fileName, oid, file.size, file.mimetype, tenantID ])
+                        if (rs.rowCount != 1) {
+                            console.error(`Incorrect number of rows affected by file upload: ${rs.rowCount}`)
+                            res.status(500).type("text/plain").send("Internal server error")
+                            await client.query("ROLLBACK")
+                        }
+                    } finally {
+                        try {
+                            await fs.promises.unlink(file.path)
+                        } catch (e) {
+                            console.error("Error deleting temp file: ", file.path.replaceAll(/[\n\r]/g, ""), e)
+                        }
+                    }
                 }
 
                 await client.query("COMMIT")
-                res.status(201)
-                   .setHeader("x-greenstar-file-id", rs.rows[0].id)
-                   .location(`/static/${encodeURIComponent(tenantID)}/${encodeURIComponent(fileName)}`)
-                   .type("text/plain")
-                   .send(`File uploaded (ID: ${rs.rows[0].id})`)
+                res.status(201).type("text/plain").send(`${files.length} files uploaded successfully.`)
 
             } catch (e) {
                 console.error(`Error retrieving file: `, e)
                 res.status(500).type("text/plain").send("Internal server error")
                 await client.query("ROLLBACK")
+
             } finally {
-                if (req.file) {
-                    try {
-                        await fs.promises.unlink(resolvedPath)
-                    } catch (e) {
-                        console.error("Error deleting temp file: ", resolvedPath, e)
-                    }
-                }
                 client.release()
             }
         },
     )
 
-    expressApp.use((error: any, req: any, res: any, next: any) => {
+    expressApp.use((error: any, _req: any, res: any, next: any) => {
         if (error instanceof multer.MulterError) {
             if (error.code === "LIMIT_FILE_SIZE") {
                 return res.status(413).type("text/plain").send("File is too large.")
