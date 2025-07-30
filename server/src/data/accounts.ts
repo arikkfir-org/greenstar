@@ -52,19 +52,17 @@ export class AccountsDataAccessLayer {
 
     async fetchAccount(tenantID: Tenant["id"], accountID: Account["id"]): Promise<Account | null> {
         const res = await this.pg.query(`
-                    SELECT p.tenant_id,
-                           p.id,
-                           p.created_at,
-                           p.updated_at,
-                           p.display_name,
-                           p.icon,
-                           p.type,
-                           p.parent_id,
-                           COALESCE(COUNT(c.id), 0) AS child_count
-                    FROM accounts AS p
-                             LEFT JOIN accounts AS c ON c.tenant_id = p.tenant_id AND c.parent_id = p.id
-                    WHERE p.tenant_id = $1 AND p.id = $2
-                    GROUP BY p.id, p.created_at, p.updated_at, p.display_name, p.type, p.icon, p.tenant_id, p.parent_id
+                    SELECT tenant_id,
+                           id,
+                           created_at,
+                           updated_at,
+                           display_name,
+                           icon,
+                           type,
+                           parent_id,
+                           child_count
+                    FROM v_accounts
+                    WHERE tenant_id = $1 AND id = $2
             `,
             [ tenantID, accountID ])
         if (res.rows.length == 0) {
@@ -102,7 +100,8 @@ export class AccountsDataAccessLayer {
                                   WHERE a.tenant_id = $1),
                 incoming AS (SELECT COALESCE(SUM(t.amount * COALESCE(r.rate, 1)), 0) AS total
                              FROM transactions t
-                                      JOIN accounts_tree AS at ON at.tenant_id = t.tenant_id AND t.target_account_id = at.id
+                                      JOIN accounts_tree AS at
+                                           ON at.tenant_id = t.tenant_id AND t.target_account_id = at.id
                                       LEFT JOIN rates AS r
                                                 ON r.source_currency_code = t.currency
                                                     AND r.target_currency_code = $3
@@ -210,21 +209,19 @@ export class AccountsDataAccessLayer {
             parameters.push(displayNameFilter)
         }
         const res = await this.pg.query(`
-                    SELECT p.tenant_id,
-                           p.id,
-                           p.created_at,
-                           p.updated_at,
-                           p.display_name,
-                           p.icon,
-                           p.type,
-                           p.parent_id,
-                           COALESCE(COUNT(c.id), 0) AS child_count
-                    FROM accounts AS p
-                             LEFT JOIN accounts AS c ON c.tenant_id = p.tenant_id AND c.parent_id = p.id
-                    WHERE p.tenant_id = $1
+                    SELECT tenant_id,
+                           id,
+                           created_at,
+                           updated_at,
+                           display_name,
+                           icon,
+                           type,
+                           parent_id,
+                           child_count
+                    FROM v_accounts
+                    WHERE tenant_id = $1
                         ${displayNameFilter ? `AND p.display_name ILIKE $2` : ``}
-                    GROUP BY p.id, p.created_at, p.updated_at, p.display_name, p.type, p.icon, p.tenant_id, p.parent_id
-                    ORDER BY p.display_name, p.id
+                    ORDER BY display_name, id
             `,
             parameters)
         return res.rows.map(convertObjectKeysToCamelCase) as Account[]
@@ -313,20 +310,18 @@ export class AccountsDataAccessLayer {
 
     async fetchChildAccounts(tenantID: Tenant["id"], accountID: Account["id"]): Promise<Account[]> {
         const res = await this.pg.query(`
-                    SELECT p.tenant_id,
-                           p.id,
-                           p.created_at,
-                           p.updated_at,
-                           p.display_name,
-                           p.icon,
-                           p.type,
-                           p.parent_id,
-                           COALESCE(COUNT(c.id), 0) AS child_count
-                    FROM accounts AS p
-                             LEFT JOIN accounts AS c ON c.tenant_id = p.tenant_id AND c.parent_id = p.id
-                    WHERE p.tenant_id = $1 AND p.parent_id = $2
-                    GROUP BY p.id, p.created_at, p.updated_at, p.display_name, p.type, p.icon, p.tenant_id, p.parent_id
-                    ORDER BY p.display_name, p.id
+                    SELECT tenant_id,
+                           id,
+                           created_at,
+                           updated_at,
+                           display_name,
+                           icon,
+                           type,
+                           parent_id,
+                           child_count
+                    FROM v_accounts
+                    WHERE tenant_id = $1 AND parent_id = $2
+                    ORDER BY display_name, id
             `,
             [ tenantID, accountID ])
         return res.rows.map(convertObjectKeysToCamelCase) as Account[]
@@ -334,20 +329,18 @@ export class AccountsDataAccessLayer {
 
     async fetchRootAccounts(tenantID: Tenant["id"]): Promise<Account[]> {
         const res = await this.pg.query(`
-                    SELECT p.tenant_id,
-                           p.id,
-                           p.created_at,
-                           p.updated_at,
-                           p.display_name,
-                           p.icon,
-                           p.type,
-                           p.parent_id,
-                           COALESCE(COUNT(c.id), 0) AS child_count
-                    FROM accounts AS p
-                             LEFT JOIN accounts AS c ON c.tenant_id = p.tenant_id AND c.parent_id = p.id
-                    WHERE p.tenant_id = $1 AND p.parent_id IS NULL
-                    GROUP BY p.id, p.created_at, p.updated_at, p.display_name, p.type, p.icon, p.tenant_id, p.parent_id
-                    ORDER BY p.display_name, p.id
+                    SELECT tenant_id,
+                           id,
+                           created_at,
+                           updated_at,
+                           display_name,
+                           icon,
+                           type,
+                           parent_id,
+                           child_count
+                    FROM v_accounts
+                    WHERE tenant_id = $1 AND parent_id IS NULL
+                    ORDER BY display_name, id
             `,
             [ tenantID ])
         return res.rows.map(convertObjectKeysToCamelCase) as Account[]
