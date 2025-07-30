@@ -19,3 +19,13 @@ CREATE TABLE accounts
         FOREIGN KEY (tenant_id, parent_id) REFERENCES accounts (tenant_id, id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 GRANT SELECT, DELETE, INSERT, UPDATE ON TABLE accounts TO greenstar_server;
+
+CREATE VIEW v_accounts AS
+SELECT a.*, COALESCE(child_counts.child_count, 0) AS child_count
+FROM accounts a
+         LEFT JOIN (SELECT tenant_id, parent_id, COUNT(*) AS child_count
+                    FROM accounts
+                    WHERE parent_id IS NOT NULL
+                    GROUP BY tenant_id, parent_id) child_counts
+                   ON a.tenant_id = child_counts.tenant_id AND a.id = child_counts.parent_id;
+GRANT SELECT ON v_accounts TO greenstar_server;
