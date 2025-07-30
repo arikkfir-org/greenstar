@@ -212,6 +212,7 @@ jobs:
                      --init \
                      --ipc=host \
                      -e CI=1 \
+                     -e NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/rootCA.pem \
                      -v /usr/local/share/ca-certificates/rootCA.pem:/usr/local/share/ca-certificates/rootCA.pem \
                      -v ${HOME}/.pki/nssdb:/root/.pki/nssdb \
                      -v /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt \
