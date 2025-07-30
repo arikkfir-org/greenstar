@@ -51,14 +51,14 @@ CREATE TABLE scrapers
         CONSTRAINT fk_scrapers_tenant_id
             REFERENCES tenants
             ON UPDATE CASCADE ON DELETE CASCADE,
-    scraper_type_id TEXT NOT NULL
+    scraper_type_id TEXT        NOT NULL
         CONSTRAINT fk_scrapers_scraper_type_id
             REFERENCES scraper_types
             ON UPDATE CASCADE ON DELETE CASCADE,
-    id              TEXT NOT NULL            DEFAULT gen_random_uuid(),
+    id              TEXT        NOT NULL     DEFAULT gen_random_uuid(),
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    display_name    TEXT NOT NULL,
+    display_name    TEXT        NOT NULL,
     PRIMARY KEY (tenant_id, scraper_type_id, id)
 );
 GRANT SELECT, DELETE, INSERT, UPDATE ON TABLE scrapers TO greenstar_server;
