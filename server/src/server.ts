@@ -134,7 +134,7 @@ export async function startServer() {
             context: (): Promise<Context> => (Promise.resolve({ data: new NoOpDataLayer() })),
         }))
 
-    expressApp.get("/static/:tenantID/:fileName",
+    expressApp.get("/static/:tenantID/files/:fileName",
         cors<cors.CorsRequest>(),
         async (req, res) => {
             const client = await pgPool.connect()
