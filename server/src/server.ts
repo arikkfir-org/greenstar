@@ -226,7 +226,7 @@ export async function startServer() {
                         try {
                             await fs.promises.unlink(file.path)
                         } catch (e) {
-                            console.error("Error deleting temp file: ", file.path, e)
+                            console.error("Error deleting temp file: ", file.path.replaceAll(/[\n\r]/g, ""), e)
                         }
                     }
                 }
