@@ -23,7 +23,7 @@
         "@opentelemetry/auto-instrumentations-node": "^0.60.1",
         "@opentelemetry/exporter-prometheus": "^0.202.0",
         "@opentelemetry/exporter-trace-otlp-http": "^0.202.0",
-        "@opentelemetry/instrumentation-express": "^0.51.0",
+        "@opentelemetry/instrumentation-express": "^0.52.0",
         "@opentelemetry/instrumentation-graphql": "^0.50.0",
         "@opentelemetry/instrumentation-http": "^0.203.0",
         "@opentelemetry/resources": "^2.0.1",
