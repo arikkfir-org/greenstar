@@ -6,7 +6,7 @@ test.describe("files", {}, () => {
         const fileName = "test.txt"
 
         const fileContent = Buffer.from("Test file content")
-        const uploadResp    = await request.post(`https://api.greenstar.test/static/${tenantID}/files/${fileName}`, {
+        const uploadResp    = await request.post(`https://api.greenstar.test/static/${tenantID}/files`, {
             multipart: {
                 file1: {
                     name: fileName,
