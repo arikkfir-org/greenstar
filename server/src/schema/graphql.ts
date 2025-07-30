@@ -137,12 +137,12 @@ export type Mutation = {
   createScraper: Scraper;
   createTenant: Tenant;
   createTransaction: Transaction;
-  deleteAccount?: Maybe<Scalars['Void']['output']>;
-  deleteScraper?: Maybe<Scalars['Void']['output']>;
+  deleteAccount: Scalars['Void']['output'];
+  deleteScraper: Scalars['Void']['output'];
   deleteTenant?: Maybe<Scalars['Void']['output']>;
-  deleteTransaction?: Maybe<Scalars['Void']['output']>;
+  deleteTransaction: Scalars['Void']['output'];
   moveAccount: Account;
-  noOp?: Maybe<Scalars['Void']['output']>;
+  noOp: Scalars['Void']['output'];
 };
 
 
@@ -609,12 +609,12 @@ export type MutationResolvers<ContextType = any, ParentType extends ResolversPar
   createScraper?: Resolver<ResolversTypes['Scraper'], ParentType, ContextType, RequireFields<MutationCreateScraperArgs, 'displayName' | 'parameters' | 'scraperTypeID' | 'tenantID'>>;
   createTenant?: Resolver<ResolversTypes['Tenant'], ParentType, ContextType, RequireFields<MutationCreateTenantArgs, 'displayName' | 'id'>>;
   createTransaction?: Resolver<ResolversTypes['Transaction'], ParentType, ContextType, RequireFields<MutationCreateTransactionArgs, 'tx'>>;
-  deleteAccount?: Resolver<Maybe<ResolversTypes['Void']>, ParentType, ContextType, RequireFields<MutationDeleteAccountArgs, 'id' | 'tenantID'>>;
-  deleteScraper?: Resolver<Maybe<ResolversTypes['Void']>, ParentType, ContextType, RequireFields<MutationDeleteScraperArgs, 'id' | 'scraperTypeID' | 'tenantID'>>;
+  deleteAccount?: Resolver<ResolversTypes['Void'], ParentType, ContextType, RequireFields<MutationDeleteAccountArgs, 'id' | 'tenantID'>>;
+  deleteScraper?: Resolver<ResolversTypes['Void'], ParentType, ContextType, RequireFields<MutationDeleteScraperArgs, 'id' | 'scraperTypeID' | 'tenantID'>>;
   deleteTenant?: Resolver<Maybe<ResolversTypes['Void']>, ParentType, ContextType, RequireFields<MutationDeleteTenantArgs, 'id'>>;
-  deleteTransaction?: Resolver<Maybe<ResolversTypes['Void']>, ParentType, ContextType, RequireFields<MutationDeleteTransactionArgs, 'id' | 'tenantID'>>;
+  deleteTransaction?: Resolver<ResolversTypes['Void'], ParentType, ContextType, RequireFields<MutationDeleteTransactionArgs, 'id' | 'tenantID'>>;
   moveAccount?: Resolver<ResolversTypes['Account'], ParentType, ContextType, RequireFields<MutationMoveAccountArgs, 'accountID' | 'tenantID'>>;
-  noOp?: Resolver<Maybe<ResolversTypes['Void']>, ParentType, ContextType>;
+  noOp?: Resolver<ResolversTypes['Void'], ParentType, ContextType>;
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {

@@ -52,7 +52,7 @@ extend type Mutation {
         scraperTypeID: ID!,
         parameters: [ScraperParameterInput!]!
     ): Scraper!
-    deleteScraper(tenantID: ID!, scraperTypeID: ID!, id: ID!): Void
+    deleteScraper(tenantID: ID!, scraperTypeID: ID!, id: ID!): Void!
 }
 
 input ScraperParameterInput {

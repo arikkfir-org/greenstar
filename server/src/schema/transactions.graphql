@@ -36,7 +36,7 @@ type TransactionsResult {
 
 extend type Mutation {
     createTransaction(tx: CreateTransaction!): Transaction!
-    deleteTransaction(tenantID: ID!, id: ID!): Void
+    deleteTransaction(tenantID: ID!, id: ID!): Void!
 }
 
 input CreateTransaction {
