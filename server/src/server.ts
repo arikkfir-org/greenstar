@@ -194,12 +194,12 @@ export async function startServer() {
             try {
                 const lom = new LargeObjectManager({ pg: client })
                 for (let file of files) {
-                    try {
-                        const fileName = sanitizeFilename(file.originalname)
-                        if (!fileName) {
-                            return res.status(400).type("text/plain").send(`Invalid file name: ${file.originalname}`)
-                        }
+                    const fileName = sanitizeFilename(file.originalname)
+                    if (!fileName) {
+                        return res.status(400).type("text/plain").send(`Invalid or empty file name`)
+                    }
 
+                    try {
                         const fileStream      = fs.createReadStream(file.path)
                         const [ oid, stream ] = await lom.createAndWritableStreamAsync()
                         await new Promise((resolve, reject) => {
