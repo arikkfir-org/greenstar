@@ -37,9 +37,6 @@ frontend:
       httpsSectionName: websecure
 
 postgres:
-  extraArgs:
-    - -c
-    - log_statement=all
   ingress:
     enabled: true
     parentRef:

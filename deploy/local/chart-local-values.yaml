@@ -1,6 +1,6 @@
 cleanup:
-  jobs: false
   cronjobs: false
+  jobs: false
 
 ingress:
   domain: greenstar.test
@@ -54,9 +54,6 @@ frontend:
   startupProbe: false
 
 postgres:
-  extraArgs:
-    - -c
-    - log_statement=all
   password: local
   ingress:
     enabled: true
