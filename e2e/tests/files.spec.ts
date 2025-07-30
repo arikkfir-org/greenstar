@@ -6,7 +6,7 @@ test.describe("files", {}, () => {
         const fileName = "test.txt"
 
         const fileContent = Buffer.from("Test file content")
-        const uploadResp    = await request.post(`/static/${tenantID}/${fileName}`, {
+        const uploadResp    = await request.post(`https://api.greenstar.test/static/${tenantID}/${fileName}`, {
             multipart: {
                 file1: {
                     name: "test1.txt",
@@ -17,7 +17,7 @@ test.describe("files", {}, () => {
         })
         expect(uploadResp.ok()).toBeTruthy()
 
-        const downloadResp = await request.get(`/static/${tenantID}/${fileName}`)
+        const downloadResp = await request.get(`https://api.greenstar.test/static/${tenantID}/${fileName}`)
         expect(downloadResp.ok()).toBeTruthy()
 
         const downloadedContent = await downloadResp.body()
