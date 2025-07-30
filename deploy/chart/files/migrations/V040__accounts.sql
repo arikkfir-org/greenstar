@@ -11,14 +11,12 @@ CREATE TABLE accounts
     parent_id    TEXT,
     tenant_id    VARCHAR(10) NOT NULL
         CONSTRAINT fk_accounts_tenant_id
-            REFERENCES tenants (id)
+            REFERENCES tenants
             ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT pk_accounts
         PRIMARY KEY (tenant_id, id),
     CONSTRAINT fk_accounts_parent_id
-        FOREIGN KEY (tenant_id, parent_id)
-            REFERENCES accounts (tenant_id, id)
-            ON UPDATE CASCADE ON DELETE CASCADE
+        FOREIGN KEY (tenant_id, parent_id) REFERENCES accounts (tenant_id, id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 GRANT SELECT, DELETE, INSERT, UPDATE ON TABLE accounts TO greenstar_server;
 

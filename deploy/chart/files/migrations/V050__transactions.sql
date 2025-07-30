@@ -22,7 +22,8 @@ CREATE TABLE transactions
     tenant_id         VARCHAR(10) NOT NULL,
     CONSTRAINT fk_transactions_tenant_id
         FOREIGN KEY (tenant_id)
-            REFERENCES tenants (id) ON UPDATE CASCADE ON DELETE CASCADE,
+            REFERENCES tenants (id)
+            ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT fk_transactions_source_account_id
         FOREIGN KEY (tenant_id, source_account_id)
             REFERENCES accounts (tenant_id, id)
