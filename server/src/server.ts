@@ -120,10 +120,10 @@ export async function startServer() {
     const upload  = multer({ storage, limits: { fileSize: 1024 * 1024 * 256 } })
 
     expressApp.use(rateLimit({
-        windowMs: 5 * 60 * 1000,    // 15 minutes
-        limit: 500,                 // Limit each IP to 100 requests per `window` (here, per 15 minutes).
-        standardHeaders: "draft-8", // draft-6: `RateLimit-*` headers; draft-7 & draft-8: combined `RateLimit` header
-        legacyHeaders: false,       // Disable the `X-RateLimit-*` headers.
+        windowMs: 1000,
+        limit: 1000,
+        standardHeaders: "draft-8",
+        legacyHeaders: false,
         skip: (req) => !!req.headers["apollo-require-preflight"]?.includes("true"),
     }))
 
