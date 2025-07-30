@@ -1,0 +1,118 @@
+version: 3
+
+includes:
+  cluster:
+    dir: ../
+    internal: true
+    taskfile: Taskfile-cluster.yaml
+  toolchain:
+    dir: ../
+    internal: true
+    taskfile: Taskfile-toolchain-{{OS}}.yaml
+
+env:
+  CLOUDSDK_CORE_DISABLE_PROMPTS: "1"
+  GCP_WI_POOL: greenstar
+  GCP_WI_PROVIDER_ID:
+    sh: echo -n "local-kind-jwks-$(whoami)"
+
+tasks:
+
+  workload-identity-pool:
+    deps: [ toolchain:gcloud ]
+    cmd: gcloud iam workload-identity-pools create greenstar --location="global" --description="Workload Identity Pool for GreenSTAR" --display-name="GreenSTAR"
+    status:
+      - gcloud iam workload-identity-pools describe "${GCP_WI_POOL}" --location="global"
+
+  workload-identity-provider:
+    deps: [ toolchain:gcloud, toolchain:jq, workload-identity-pool ]
+    env:
+      ATTRIBUTE_MAPPINGS: google.subject=assertion.sub,attribute.namespace=assertion['kubernetes.io']['namespace'],attribute.service_account_name=assertion['kubernetes.io']['serviceaccount']['name'],attribute.pod=assertion['kubernetes.io']['pod']['name']
+      OIDC_ISSUER_URI:
+        sh: kubectl get --raw /.well-known/openid-configuration | jq -r .issuer
+    cmds:
+      - mkdir -pv hack
+      - kubectl get --raw /openid/v1/jwks > hack/cluster-jwks.json
+      - |
+        if ! gcloud iam workload-identity-pools providers describe --location="global" --workload-identity-pool="${GCP_WI_POOL}" "${GCP_WI_PROVIDER_ID}" 2>/dev/null; then
+          gcloud iam workload-identity-pools providers create-oidc "${GCP_WI_PROVIDER_ID}" \
+            --location="global" \
+            --workload-identity-pool="${GCP_WI_POOL}" \
+            --issuer-uri="${OIDC_ISSUER_URI}" \
+            --jwk-json-path="hack/cluster-jwks.json" \
+            --allowed-audiences="" \
+            --attribute-mapping="${ATTRIBUTE_MAPPINGS}"
+        else
+          gcloud iam workload-identity-pools providers update-oidc "${GCP_WI_PROVIDER_ID}" \
+            --location="global" \
+            --workload-identity-pool="${GCP_WI_POOL}" \
+            --issuer-uri="${OIDC_ISSUER_URI}" \
+            --jwk-json-path="hack/cluster-jwks.json" \
+            --allowed-audiences="" \
+            --attribute-mapping="${ATTRIBUTE_MAPPINGS}"
+        fi
+    status:
+      - gcloud iam workload-identity-pools providers describe --location="global" --workload-identity-pool="${GCP_WI_POOL}" "${GCP_WI_PROVIDER_ID}" > hack/provider.yaml
+      - test "$(yq '.attributeMapping["attribute.namespace"]' hack/provider.yaml)" = "assertion['kubernetes.io']['namespace']"
+      - test "$(yq '.attributeMapping["attribute.pod"]' hack/provider.yaml)" = "assertion['kubernetes.io']['pod']['name']"
+      - test "$(yq '.attributeMapping["attribute.service_account_name"]' hack/provider.yaml)" = "assertion['kubernetes.io']['serviceaccount']['name']"
+      - test "$(yq '.attributeMapping["google.subject"]' hack/provider.yaml)" = "assertion.sub"
+      - test "$(yq '.oidc.issuerUri' hack/provider.yaml)" = "${OIDC_ISSUER_URI}"
+      - test "$(yq '.oidc.jwksJson' hack/provider.yaml | jq --sort-keys -c)" = "$(kubectl get --raw /openid/v1/jwks | jq --sort-keys -c)"
+
+  enable-workload-identity-provider:
+    deps: [ toolchain:gcloud, toolchain:yq, toolchain:jq, workload-identity-provider, cluster ]
+    requires:
+      vars: [ GCP_PROJECT_ID ]
+    env:
+      GCP_PROJECT_NUMBER:
+        sh: gcloud projects describe ${GCP_PROJECT_ID} --format="value(projectNumber)"
+      GCP_WI_PROVIDER_URI:
+        sh: echo -n "projects/${GCP_PROJECT_NUMBER}/locations/global/workloadIdentityPools/${GCP_WI_POOL}/providers/${GCP_WI_PROVIDER_ID}"
+      OIDC_AUDIENCE:
+        sh: echo -n "https://iam.googleapis.com/${GCP_WI_PROVIDER_URI}"
+      OIDC_ISSUER_URI:
+        sh: kubectl get --raw /.well-known/openid-configuration | jq -r .issuer
+    cmds:
+      - mkdir -pv hack
+      - |
+        gcloud iam workload-identity-pools create-cred-config "${GCP_WI_PROVIDER_URI}" \
+          --credential-source-file=/var/run/service-account/token \
+          --credential-source-type=text \
+          --output-file=hack/credential-configuration.json
+      - kubectl get namespace greenstar || kubectl create namespace greenstar
+      - kubectl delete configmap -n greenstar gcp-workload-identity-federation || true
+      - kubectl create configmap -n greenstar gcp-workload-identity-federation --from-file hack/credential-configuration.json
+      - touch ./hack/greenstar-server-values.yaml
+      - yq -i '.server.extraEnv = (.server.extraEnv // {})' ./hack/greenstar-server-values.yaml
+      - yq -i '.server.volumes = (.server.volumes // [])' ./hack/greenstar-server-values.yaml
+      - yq -i '.server.volumeMounts = (.server.volumeMounts // [])' ./hack/greenstar-server-values.yaml
+      - |
+        cat <<EOF | yq -i ea 'select(fileIndex == 0) *+ select(fileIndex == 1)' ./hack/greenstar-server-values.yaml -
+        server:
+          extraEnv:
+            GCP_PROJECT_ID:
+              value: "${GCP_PROJECT_ID}"
+            GOOGLE_APPLICATION_CREDENTIALS:
+              value: /etc/workload-identity/credential-configuration.json
+          volumeMounts:
+            - name: token
+              mountPath: /var/run/service-account
+              readOnly: true
+            - name: workload-identity-credential-configuration
+              mountPath: /etc/workload-identity
+              readOnly: true
+          volumes:
+            - name: token
+              projected:
+                sources:
+                  - serviceAccountToken:
+                      audience: "${OIDC_AUDIENCE}"
+                      expirationSeconds: 3600
+                      path: token
+            - name: workload-identity-credential-configuration
+              configMap:
+                name: gcp-workload-identity-federation
+        EOF
+    status:
+      - test "$(kubectl get configmap -n greenstar gcp-workload-identity-federation -oyaml | yq '.data["credential-configuration.json"]' | jq -r '.audience')" = "//iam.googleapis.com/${GCP_WI_PROVIDER_URI}"

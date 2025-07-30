@@ -127,11 +127,11 @@ export async function startServer() {
     const upload  = multer({ storage, limits: { fileSize: 1024 * 1024 * 256 } })
 
     expressApp.use(rateLimit({
-        windowMs: 60 * 1000,        // 15 minutes
-        limit: 100,                 // Limit each IP to 100 requests per `window` (here, per 15 minutes).
-        standardHeaders: "draft-8", // draft-6: `RateLimit-*` headers; draft-7 & draft-8: combined `RateLimit` header
-        legacyHeaders: false,       // Disable the `X-RateLimit-*` headers.
-        ipv6Subnet: 56,             // Set to 60 or 64 to be less aggressive, or 52 or 48 to be more aggressive
+        windowMs: 1000,
+        limit: 1000,
+        standardHeaders: "draft-8",
+        legacyHeaders: false,
+        skip: (req) => !!req.headers["apollo-require-preflight"]?.includes("true"),
     }))
 
     expressApp.use("/graphql",
@@ -141,7 +141,7 @@ export async function startServer() {
             context: (): Promise<Context> => (Promise.resolve({ data: new NoOpDataLayer() })),
         }))
 
-    expressApp.get("/static/:tenantID/:fileName",
+    expressApp.get("/static/:tenantID/files/:fileName",
         cors<cors.CorsRequest>(),
         async (req, res) => {
             const client = await pgPool.connect()
@@ -183,13 +183,9 @@ export async function startServer() {
         },
     )
 
-    expressApp.post("/static/:tenantID/:scraperID/:scraperJobID",
-        upload.single("file"),
+    expressApp.post("/static/:tenantID/files",
+        upload.any(),
         async (req, res) => {
-            if (!req.file) {
-                return res.status(400).type("text/plain").send("No file was uploaded.")
-            }
-
             const tenantID = req.params.tenantID
             if (!/^[a-zA-Z0-9_-]+$/.test(tenantID)) {
                 return res.status(400).type("text/plain").send("Invalid tenant ID.")

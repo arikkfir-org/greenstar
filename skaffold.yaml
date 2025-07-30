@@ -10,26 +10,26 @@ build:
         buildArgs:
           VERSION: 0.0.0+local
         dockerfile: acme/Dockerfile
-      image: ghcr.io/arikkfir/greenstar/acme
+      image: ghcr.io/arikkfir-org/greenstar/acme
     - context: ratesjob
       docker:
         buildArgs:
           VERSION: 0.0.0+local
         dockerfile: ratesjob/Dockerfile
-      image: ghcr.io/arikkfir/greenstar/ratesjob
+      image: ghcr.io/arikkfir-org/greenstar/ratesjob
     - context: scrapers
       docker:
         buildArgs:
           VERSION: 0.0.0+local
         dockerfile: scrapers/Dockerfile
-      image: ghcr.io/arikkfir/greenstar/scrapers
+      image: ghcr.io/arikkfir-org/greenstar/scrapers
     - context: server
       docker:
         buildArgs:
           VERSION: 0.0.0+local
         dockerfile: server/Dockerfile
         target: development
-      image: ghcr.io/arikkfir/greenstar/server
+      image: ghcr.io/arikkfir-org/greenstar/server
       sync:
         manual:
           - src: src/**
@@ -40,7 +40,7 @@ build:
           VERSION: 0.0.0+local
         dockerfile: frontend/Dockerfile
         target: development
-      image: ghcr.io/arikkfir/greenstar/frontend
+      image: ghcr.io/arikkfir-org/greenstar/frontend
       sync:
         manual:
           - src: public/**
@@ -55,6 +55,11 @@ build:
     concurrency: 5
 deploy:
   helm:
+    flags:
+      install:
+        - --timeout=1m
+      upgrade:
+        - --timeout=1m
     releases:
       - name: greenstar
         chartPath: ./deploy/chart
@@ -72,21 +77,21 @@ deploy:
         setValueTemplates:
           acme:
             image:
-              repository: "{{.IMAGE_REPO_ghcr_io_arikkfir_greenstar_acme}}"
-              tag: "{{.IMAGE_TAG_ghcr_io_arikkfir_greenstar_acme}}@{{.IMAGE_DIGEST_ghcr_io_arikkfir_greenstar_acme}}"
+              repository: "{{.IMAGE_REPO_ghcr_io_arikkfir_org_greenstar_acme}}"
+              tag: "{{.IMAGE_TAG_ghcr_io_arikkfir_org_greenstar_acme}}@{{.IMAGE_DIGEST_ghcr_io_arikkfir_org_greenstar_acme}}"
           ratesjob:
             image:
-              repository: "{{.IMAGE_REPO_ghcr_io_arikkfir_greenstar_ratesjob}}"
-              tag: "{{.IMAGE_TAG_ghcr_io_arikkfir_greenstar_ratesjob}}@{{.IMAGE_DIGEST_ghcr_io_arikkfir_greenstar_ratesjob}}"
+              repository: "{{.IMAGE_REPO_ghcr_io_arikkfir_org_greenstar_ratesjob}}"
+              tag: "{{.IMAGE_TAG_ghcr_io_arikkfir_org_greenstar_ratesjob}}@{{.IMAGE_DIGEST_ghcr_io_arikkfir_org_greenstar_ratesjob}}"
           scrapers:
             image:
-              repository: "{{.IMAGE_REPO_ghcr_io_arikkfir_greenstar_scrapers}}"
-              tag: "{{.IMAGE_TAG_ghcr_io_arikkfir_greenstar_scrapers}}@{{.IMAGE_DIGEST_ghcr_io_arikkfir_greenstar_scrapers}}"
+              repository: "{{.IMAGE_REPO_ghcr_io_arikkfir_org_greenstar_scrapers}}"
+              tag: "{{.IMAGE_TAG_ghcr_io_arikkfir_org_greenstar_scrapers}}@{{.IMAGE_DIGEST_ghcr_io_arikkfir_org_greenstar_scrapers}}"
           server:
             image:
-              repository: "{{.IMAGE_REPO_ghcr_io_arikkfir_greenstar_server}}"
-              tag: "{{.IMAGE_TAG_ghcr_io_arikkfir_greenstar_server}}@{{.IMAGE_DIGEST_ghcr_io_arikkfir_greenstar_server}}"
+              repository: "{{.IMAGE_REPO_ghcr_io_arikkfir_org_greenstar_server}}"
+              tag: "{{.IMAGE_TAG_ghcr_io_arikkfir_org_greenstar_server}}@{{.IMAGE_DIGEST_ghcr_io_arikkfir_org_greenstar_server}}"
           frontend:
             image:
-              repository: "{{.IMAGE_REPO_ghcr_io_arikkfir_greenstar_frontend}}"
-              tag: "{{.IMAGE_TAG_ghcr_io_arikkfir_greenstar_frontend}}@{{.IMAGE_DIGEST_ghcr_io_arikkfir_greenstar_frontend}}"
+              repository: "{{.IMAGE_REPO_ghcr_io_arikkfir_org_greenstar_frontend}}"
+              tag: "{{.IMAGE_TAG_ghcr_io_arikkfir_org_greenstar_frontend}}@{{.IMAGE_DIGEST_ghcr_io_arikkfir_org_greenstar_frontend}}"

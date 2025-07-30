@@ -2,11 +2,9 @@
 
 FROM node:24-alpine AS dependencies
 WORKDIR /app
-COPY package.json package-lock.json apply-patches.sh ./
+COPY package.json package-lock.json *.sh ./
 RUN npm ci
-RUN apk add --no-cache patch ed && chmod +x apply-patches.sh && ./apply-patches.sh && rm -f ./apply-patches.sh
-ARG VERSION=0.0.0-notset
-RUN npm pkg set version="${VERSION}"
+RUN test -f apply-patches.sh && apk add --no-cache patch ed && ./apply-patches.sh && rm -f ./apply-patches.sh || true
 
 FROM node:24-alpine AS development
 WORKDIR /app
@@ -22,6 +20,8 @@ COPY tsconfig.json ./
 COPY tsconfig.node.json ./
 COPY vite.config.ts ./
 COPY src ./src/
+ARG VERSION=0.0.0-notset
+RUN npm pkg set version="${VERSION}"
 ENTRYPOINT ["npm","run","dev"]
 
 FROM development AS builder

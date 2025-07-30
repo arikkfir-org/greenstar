@@ -7,7 +7,7 @@ updates:
     schedule:
       interval: weekly
     commit-message:
-      prefix: "chore(gha)"
+      prefix: "chore(ci)"
       include: scope
     labels:
       - dependencies

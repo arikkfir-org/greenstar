@@ -1,0 +1,20 @@
+version: 3
+
+includes:
+  toolchain:
+    dir: ../
+    internal: true
+    taskfile: Taskfile-toolchain-{{OS}}.yaml
+
+run: when_changed
+
+tasks:
+
+  default:
+    deps: [ test ]
+
+  test:
+    deps: [ toolchain:node ]
+    dir: e2e
+    cmds:
+      - npm run test -- {{.CLI_ARGS}}

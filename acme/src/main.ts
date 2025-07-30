@@ -62,26 +62,23 @@ async function main() {
         console.info(`Creating tenant ${tenantData.id}...`)
         const builtinAccountIDs = await generateTenant(tenantData.id, tenantData.displayName)
 
-        if (tenantData.accounts) {
-            console.info(`Creating accounts for tenant ${tenantData.id}...`)
-            for (let account of tenantData.accounts) {
-                await generateAccount(tenantData.id, builtinAccountIDs, account)
-            }
-            for (let account of tenantData.accounts) {
-                console.info(`Creating account transactions for tenant ${tenantData.id}...`)
-                await generateAccountTransactions(tenantData.id, tenantData.defaultCurrency, account)
-            }
-        } else {
-            console.warn(`No accounts found for tenant ${tenantData.id}`)
+        console.info(`Creating accounts for tenant ${tenantData.id}...`)
+        for (let account of tenantData.accounts) {
+            await generateAccount(tenantData.id, builtinAccountIDs, account)
         }
 
-        if (tenantData.scrapers) {
-            console.info(`Creating scrapers for tenant ${tenantData.id}...`)
+        console.info(`Creating account transactions for tenant ${tenantData.id}...`)
+        if (tenantData.accounts && tenantData.accounts.length) {
+            for (let account of tenantData.accounts) {
+                await generateAccountTransactions(tenantData.id, tenantData.defaultCurrency, account)
+            }
+        }
+
+        console.info(`Creating scrapers for tenant ${tenantData.id}...`)
+        if (tenantData.scrapers && tenantData.scrapers.length) {
             for (let scraper of tenantData.scrapers) {
                 await generateScraper(tenantData.id, scraper)
             }
-        } else {
-            console.warn(`No scrapers found for tenant ${tenantData.id}`)
         }
 
         console.info(`Finished processing tenant ${tenantData.id}`)

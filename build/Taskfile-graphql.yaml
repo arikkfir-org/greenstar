@@ -1,0 +1,43 @@
+version: 3
+
+includes:
+  toolchain:
+    dir: ../
+    internal: true
+    taskfile: Taskfile-toolchain-{{OS}}.yaml
+
+run: when_changed
+
+tasks:
+
+  default:
+    deps: [ acme, e2e, frontend, ratesjob, scrapers, server ]
+
+  acme:
+    deps: [ { task: generate-dir, vars: { DIR: acme } } ]
+
+  e2e:
+    deps: [ { task: generate-dir, vars: { DIR: e2e } } ]
+
+  frontend:
+    deps: [ { task: generate-dir, vars: { DIR: frontend } } ]
+
+  ratesjob:
+    deps: [ { task: generate-dir, vars: { DIR: ratesjob } } ]
+
+  scrapers:
+    deps: [ { task: generate-dir, vars: { DIR: scrapers } } ]
+
+  server:
+    deps: [ { task: generate-dir, vars: { DIR: server } } ]
+
+  generate-dir:
+    prefix: graphql-{{.DIR}}
+    internal: true
+    requires:
+      vars: [ DIR ]
+    deps: [ toolchain:node ]
+    dir: '{{.DIR}}'
+    cmds:
+      - rm -rfv "src/graphql"
+      - npm run codegen

@@ -65,14 +65,13 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   annotations:
-    "helm.sh/hook": post-install
+    "helm.sh/hook": post-install, post-upgrade
     "helm.sh/hook-weight": "-10"
   labels:
     {{- include "greenstar.commonLabels" . | nindent 4 }}
     app.kubernetes.io/component: {{ $componentName | quote }}
   name: {{ printf "%s-%s" $prefix $componentName | quote }}
 spec:
-  activeDeadlineSeconds: 120
   template:
     metadata:
       labels:

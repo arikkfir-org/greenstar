@@ -34,7 +34,8 @@ export interface TransactionRow extends Transaction {
 
 export const GraphResolvers: Resolvers<Context> = {
     Mutation: {
-        noOp: async (_: any, _args, _ctx) => null,
+        noOp: async (_: any, _args, _ctx) => {
+        },
         createAccount: async (_: any, args, ctx) => ctx.data.createAccount(args),
         createCurrencyRate: async (_: any, args, ctx) => ctx.data.createCurrencyRate(args),
         upsertScraper: async (_: any, args, ctx) => ctx.data.upsertScraper(args),

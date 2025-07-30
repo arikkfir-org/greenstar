@@ -84,8 +84,10 @@ async function main() {
     console.log(`Supported currencies: ${supportedCurrencies.join(", ")}`)
 
     // Fetch all currencies from the database
-    const { data: currenciesData } = await graphQLClient.query(GET_CURRENCIES, {}).toPromise()
-    if (!currenciesData) {
+    const { data: currenciesData, error: currenciesError } = await graphQLClient.query(GET_CURRENCIES, {}).toPromise()
+    if (currenciesError) {
+        throw currenciesError
+    } else if (!currenciesData) {
         throw new Error("No currencies found in database")
     }
     const dbCurrencies = currenciesData.currencies.map((c: { code: string }) => c.code)

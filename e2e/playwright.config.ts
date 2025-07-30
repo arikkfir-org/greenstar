@@ -27,7 +27,7 @@ export default defineConfig({
         ],
     use: {
         baseURL: "https://acme.app.greenstar.test",
-        ignoreHTTPSErrors: !!process.env.CI,
+        ignoreHTTPSErrors: false, //!!process.env.CI,
         screenshot: "on",
         trace: "on",
         video: "on",
