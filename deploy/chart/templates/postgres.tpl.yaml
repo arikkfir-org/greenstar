@@ -4,6 +4,7 @@
 {{- $serviceName := printf "%s-%s" $prefix $componentName -}}
 {{- $secretName := printf "%s-%s" $prefix $componentName -}}
 {{- $dataPVCName := printf "%s-%s-data" $prefix $componentName -}}
+{{- $migrationsConfigMapName := printf "%s-%s-migrations" $prefix $componentName -}}
 {{- $migrationUserPassword := default (randAlphaNum 16) .Values.server.migrate.postgresPassword -}}
 {{- $postgresUserPassword := default (randAlphaNum 16) .Values.postgres.password -}}
 {{- $serverUserPassword := default (randAlphaNum 16) .Values.server.postgresPassword -}}
@@ -85,6 +86,85 @@ stringData:
     {{- $vars = merge $vars (dict "serverUserPassword" $serverUserPassword) -}}
     {{- $rendered := tpl $file $vars -}}
     {{ $rendered | nindent 4 }}
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    "helm.sh/hook": pre-upgrade, post-install
+    "helm.sh/hook-weight": "-21"
+  labels:
+    {{- include "greenstar.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ $componentName | quote }}
+  name: {{ $migrationsConfigMapName | quote }}
+data:
+{{ (.Files.Glob "files/migrations/*.sql").AsConfig | indent 2 }}
+
+---
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    "helm.sh/hook": pre-upgrade, post-install
+    "helm.sh/hook-weight": "-20"
+  labels:
+    {{- include "greenstar.commonLabels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ $componentName | quote }}
+  name: {{ printf "%s-%s-migrate" $prefix $componentName | quote }}
+spec:
+  activeDeadlineSeconds: 300
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        {{- include "greenstar.commonLabels" . | nindent 8 }}
+        app.kubernetes.io/component: {{ $componentName | quote }}
+    spec:
+      containers:
+        - image: flyway/flyway:11.3.1-alpine
+          args: [ migrate ]
+          env:
+            - name: FLYWAY_URL
+              value: jdbc:postgresql://{{ printf "%s-postgres" $prefix }}:5432/greenstar?connectTimeout=3&sslmode=disable
+            - name: FLYWAY_USER
+              value: "greenstar_migration"
+            - name: FLYWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-%s" $prefix $componentName | quote }}
+                  key: migration-user-pwd
+                  optional: false
+            - name: FLYWAY_LOCATIONS
+              value: "filesystem:/var/lib/flyway/sql"
+            - name: FLYWAY_OUTPUT_QUERY_RESULTS
+              value: "true"
+            {{- range $key, $value := .Values.server.migrate.extraEnv }}
+            - name: {{ $key | quote }}
+              {{ toYaml $value | nindent 14 }}
+            {{- end }}
+          name: flyway
+          resources:
+            limits:
+              cpu: {{ required "Server migration CPU limit is required" .Values.server.migrate.resources.limits.cpu | quote }}
+              memory: {{ required "Server migration RAM limit is required" .Values.server.migrate.resources.limits.memory | quote }}
+            requests:
+              cpu: {{ required "Server migration CPU request is required" .Values.server.migrate.resources.requests.cpu | quote }}
+              memory: {{ required "Server migration RAM request is required" .Values.server.migrate.resources.requests.memory | quote }}
+          volumeMounts:
+            - name: migrations
+              readOnly: true
+              mountPath: /var/lib/flyway/sql
+      volumes:
+        - name: migrations
+          configMap:
+            name: {{ $migrationsConfigMapName | quote }}
+            optional: false
+      restartPolicy: OnFailure
+      enableServiceLinks: false
+      serviceAccountName: {{ $serviceAccountName | quote }}
 
 ---
 
