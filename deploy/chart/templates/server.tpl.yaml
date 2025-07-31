@@ -2,7 +2,7 @@
 {{- $componentName := "server" -}}
 {{- $serviceAccountName := printf "%s-%s" $prefix $componentName -}}
 {{- $serviceName := printf "%s-%s" $prefix $componentName -}}
-{{- $migrationsConfigMapName := printf "%s-%s-migrations" $prefix $componentName -}}
+{{- $dataPVCName := printf "%s-%s-data" $prefix $componentName -}}
 {{- /*------------------------------------------------------------------------------------------------------------*/ -}}
 ---
 
@@ -42,14 +42,21 @@ spec:
 ---
 
 apiVersion: v1
-kind: ConfigMap
+kind: PersistentVolumeClaim
 metadata:
   labels:
     {{- include "greenstar.commonLabels" . | nindent 4 }}
     app.kubernetes.io/component: {{ $componentName | quote }}
-  name: {{ $migrationsConfigMapName | quote }}
-data:
-{{ (.Files.Glob "files/migrations/*.sql").AsConfig | indent 2 }}
+  name: {{ $dataPVCName | quote }}
+spec:
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 4Gi
+    limits:
+      storage: 4Gi
 
 ---
 
@@ -77,81 +84,6 @@ spec:
         {{- include "greenstar.commonLabels" . | nindent 8 }}
         app.kubernetes.io/component: {{ $componentName | quote }}
     spec:
-      initContainers:
-
-        # Wait for Postgres to be available
-        - image: {{ printf "postgres:%s" .Values.postgres.version | quote }}
-          args:
-            - bash
-            - -c
-            - "while ! psql -c \"\\q\"; do sleep 1; done"
-          env:
-            - name: PGHOST
-              value: {{ printf "%s-postgres" $prefix | quote }}
-            - name: PGPORT
-              value: "5432"
-            - name: PGDATABASE
-              value: "greenstar"
-            - name: PGUSER
-              value: "greenstar_server"
-            - name: PGPASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ printf "%s-postgres" $prefix | quote }}
-                  key: server-user-pwd
-                  optional: false
-            - name: PGAPPNAME
-              value: {{ printf "%s-%s-wait-for-postgres" $prefix $componentName | quote }}
-            - name: PGCONNECT_TIMEOUT
-              value: "3"
-            - name: PGIDLE_TIMEOUT
-              value: "10"
-            - name: PGSSLMODE
-              value: "disable"
-          name: wait-for-postgres
-          resources:
-            limits:
-              cpu: "100m"
-              memory: "32Mi"
-            requests:
-              cpu: "100m"
-              memory: "16Mi"
-
-        # Database migrations initialization container
-        - image: flyway/flyway:11.3.1-alpine
-          args: [ migrate ]
-          env:
-            - name: FLYWAY_URL
-              value: jdbc:postgresql://{{ printf "%s-postgres" $prefix }}:5432/greenstar?connectTimeout=3&sslmode=disable
-            - name: FLYWAY_USER
-              value: "greenstar_migration"
-            - name: FLYWAY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ printf "%s-postgres" $prefix | quote }}
-                  key: migration-user-pwd
-                  optional: false
-            - name: FLYWAY_LOCATIONS
-              value: "filesystem:/var/lib/flyway/sql"
-            - name: FLYWAY_OUTPUT_QUERY_RESULTS
-              value: "true"
-            {{- range $key, $value := .Values.server.migrate.extraEnv }}
-            - name: {{ $key | quote }}
-              {{ toYaml $value | nindent 14 }}
-            {{- end }}
-          name: flyway
-          resources:
-            limits:
-              cpu: {{ required "Server migration CPU limit is required" .Values.server.migrate.resources.limits.cpu | quote }}
-              memory: {{ required "Server migration RAM limit is required" .Values.server.migrate.resources.limits.memory | quote }}
-            requests:
-              cpu: {{ required "Server migration CPU request is required" .Values.server.migrate.resources.requests.cpu | quote }}
-              memory: {{ required "Server migration RAM request is required" .Values.server.migrate.resources.requests.memory | quote }}
-          volumeMounts:
-            - name: migrations
-              readOnly: true
-              mountPath: /var/lib/flyway/sql
-
       containers:
         - image: {{ .Values.server.image.repository }}:{{ .Values.server.image.tag | default .Chart.AppVersion }}
           imagePullPolicy: {{ .Values.server.image.pullPolicy }}
@@ -251,20 +183,23 @@ spec:
             failureThreshold: 10
             timeoutSeconds: 1
             terminationGracePeriodSeconds: 60
-          {{- if not (empty .Values.server.volumeMounts) }}
           volumeMounts:
+            - name: data
+              readOnly: false
+              mountPath: /var/lib/greenstar/data
+            {{- if not (empty .Values.server.volumeMounts) }}
             {{- toYaml .Values.server.volumeMounts | nindent 12 }}
-          {{- end }}
+            {{- end }}
       enableServiceLinks: false
       serviceAccountName: {{ $serviceAccountName | quote }}
       volumes:
-        - name: migrations
-          configMap:
-            name: {{ $migrationsConfigMapName | quote }}
-            optional: false
-      {{- if not (empty .Values.server.volumes) }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ $dataPVCName | quote }}
+            readOnly: false
+        {{- if not (empty .Values.server.volumes) }}
         {{- toYaml .Values.server.volumes | nindent 8 }}
-      {{- end }}
+        {{- end }}
 
 {{- if .Values.server.ingress.enabled }}
 

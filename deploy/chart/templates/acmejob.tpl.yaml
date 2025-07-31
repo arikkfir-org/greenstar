@@ -55,31 +55,6 @@ spec:
         {{- include "greenstar.commonLabels" . | nindent 8 }}
         app.kubernetes.io/component: {{ $componentName | quote }}
     spec:
-      initContainers:
-
-        # Wait for GraphQL server to be available
-        - image: alpine/curl:8.14.1
-          args:
-            - --fail-with-body
-            - --location
-            - --silent
-            - --show-error
-            - --verbose
-            - --header
-            - "apollo-require-preflight: true"
-            - "$(GRAPHQL_API_URL)/graphql?query=%7B__typename%7D"
-          env:
-            - name: GRAPHQL_API_URL
-              value: http://greenstar-server/graphql
-          name: wait-for-graphql-server
-          resources:
-            limits:
-              cpu: "100m"
-              memory: "32Mi"
-            requests:
-              cpu: "100m"
-              memory: "16Mi"
-
       containers:
         - env:
             - name: GRAPHQL_API_URL
