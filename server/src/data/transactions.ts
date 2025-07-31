@@ -211,9 +211,7 @@ export class TransactionsDataAccessLayer {
                            sa.icon                                          AS sa_icon,
                            sa.type                                          AS sa_type,
                            sa.parent_id                                     AS sa_parent_id,
-                           (SELECT COALESCE(COUNT(a.id), 0)
-                            FROM accounts AS a
-                            WHERE a.tenant_id = $1 AND a.parent_id = sa.id) AS sa_child_count,
+                           sa.child_count   AS sa_child_count,
                            ta.id                                            AS ta_id,
                            ta.created_at                                    AS ta_created_at,
                            ta.updated_at                                    AS ta_updated_at,
@@ -221,13 +219,11 @@ export class TransactionsDataAccessLayer {
                            ta.icon                                          AS ta_icon,
                            ta.type                                          AS ta_type,
                            ta.parent_id                                     AS ta_parent_id,
-                           (SELECT COALESCE(COUNT(a.id), 0)
-                            FROM accounts AS a
-                            WHERE a.tenant_id = $1 AND a.parent_id = ta.id) AS ta_child_count
+                           ta.child_count   AS ta_child_count
                     FROM transactions t
-                             JOIN currencies c ON t.currency = c.code
-                             JOIN accounts sa ON t.tenant_id = sa.tenant_id AND t.source_account_id = sa.id
-                             JOIN accounts ta ON t.tenant_id = ta.tenant_id AND t.target_account_id = ta.id
+                             JOIN currencies AS c ON t.currency = c.code
+                             JOIN v_accounts AS sa ON t.tenant_id = sa.tenant_id AND t.source_account_id = sa.id
+                             JOIN v_accounts AS ta ON t.tenant_id = ta.tenant_id AND t.target_account_id = ta.id
                         ${args.involvingAccountID ? cteJoins : ``}
                     WHERE t.tenant_id = $1
                       AND ${directionCond}
@@ -244,8 +240,8 @@ export class TransactionsDataAccessLayer {
             SELECT COUNT(t.id) AS total_count
             FROM transactions t
                      JOIN currencies c ON t.currency = c.code
-                     JOIN accounts sa ON t.tenant_id = sa.tenant_id AND t.source_account_id = sa.id
-                     JOIN accounts ta ON t.tenant_id = ta.tenant_id AND t.target_account_id = ta.id
+                     JOIN v_accounts AS sa ON t.tenant_id = sa.tenant_id AND t.source_account_id = sa.id
+                     JOIN v_accounts AS ta ON t.tenant_id = ta.tenant_id AND t.target_account_id = ta.id
                 ${args.involvingAccountID ? cteJoins : ``}
             WHERE t.tenant_id = $1
               AND ${directionCond}
