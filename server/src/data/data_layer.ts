@@ -159,70 +159,70 @@ export interface DataLayer {
 }
 
 export class NoOpDataLayer {
-    createAccount(args: MutationCreateAccountArgs): Promise<Account> {
+    createAccount(_args: MutationCreateAccountArgs): Promise<Account> {
         throw new Error("Not implemented")
     }
 
-    createCurrencyRate(args: MutationCreateCurrencyRateArgs): Promise<CurrencyRate> {
+    createCurrencyRate(_args: MutationCreateCurrencyRateArgs): Promise<CurrencyRate> {
         throw new Error("Not implemented")
     }
 
-    createScraper(args: MutationCreateScraperArgs): Promise<Scraper> {
+    createScraper(_args: MutationCreateScraperArgs): Promise<Scraper> {
         throw new Error("Not implemented")
     }
 
-    createTenant(args: MutationCreateTenantArgs): Promise<Tenant> {
+    createTenant(_args: MutationCreateTenantArgs): Promise<Tenant> {
         throw new Error("Not implemented")
     }
 
-    createTransaction(args: MutationCreateTransactionArgs): Promise<Transaction> {
+    createTransaction(_args: MutationCreateTransactionArgs): Promise<Transaction> {
         throw new Error("Not implemented")
     }
 
-    deleteAccount(args: MutationDeleteAccountArgs): Promise<void> {
+    deleteAccount(_args: MutationDeleteAccountArgs): Promise<void> {
         throw new Error("Not implemented")
     }
 
-    deleteScraper(args: MutationDeleteScraperArgs): Promise<void> {
+    deleteScraper(_args: MutationDeleteScraperArgs): Promise<void> {
         throw new Error("Not implemented")
     }
 
-    deleteTenant(args: MutationDeleteTenantArgs): Promise<void> {
+    deleteTenant(_args: MutationDeleteTenantArgs): Promise<void> {
         throw new Error("Not implemented")
     }
 
-    deleteTransaction(args: MutationDeleteTransactionArgs): Promise<void> {
+    deleteTransaction(_args: MutationDeleteTransactionArgs): Promise<void> {
         throw new Error("Not implemented")
     }
 
-    fetchAccount(tenantID: Tenant["id"], accountID: Account["id"]): Promise<Account | null> {
+    fetchAccount(_tenantID: Tenant["id"], _accountID: Account["id"]): Promise<Account | null> {
         throw new Error("Not implemented")
     }
 
-    fetchAccountBalance(tenantID: Tenant["id"], accountID: Account["id"], args: AccountBalanceArgs): Promise<number> {
+    fetchAccountBalance(_tenantID: Tenant["id"], _accountID: Account["id"], _args: AccountBalanceArgs): Promise<number> {
         throw new Error("Not implemented")
     }
 
-    fetchAccountBalanceOverTime(tenantID: Tenant["id"],
+    fetchAccountBalanceOverTime(_tenantID: Tenant["id"],
         accountID: Account["id"],
-        args: AccountBalanceOverTimeArgs): Promise<BalancePoint[]> {
+        _args: AccountBalanceOverTimeArgs): Promise<BalancePoint[]> {
         throw new Error("Not implemented")
     }
 
-    fetchAccountChildren(tenantID: Tenant["id"], accountID: Account["id"]): Promise<Account[]> {
+    fetchAccountChildren(_tenantID: Tenant["id"], _accountID: Account["id"]): Promise<Account[]> {
         throw new Error("Not implemented")
     }
 
-    fetchAccounts(tenantID: Tenant["id"], filter?: string | null): Promise<Account[]> {
+    fetchAccounts(_tenantID: Tenant["id"], filter?: string | null): Promise<Account[]> {
         throw new Error("Not implemented")
     }
 
-    fetchAccountsBalanceOverTime(tenantID: Tenant["id"],
-        args: TenantAccountsBalanceOverTimeArgs): Promise<AccountBalanceOverTime[]> {
+    fetchAccountsBalanceOverTime(_tenantID: Tenant["id"],
+        _args: TenantAccountsBalanceOverTimeArgs): Promise<AccountBalanceOverTime[]> {
         throw new Error("Not implemented")
     }
 
-    fetchCurrency(code: Currency["code"]): Promise<Currency | null> {
+    fetchCurrency(_code: Currency["code"]): Promise<Currency | null> {
         throw new Error("Not implemented")
     }
 
@@ -230,24 +230,24 @@ export class NoOpDataLayer {
         throw new Error("Not implemented")
     }
 
-    fetchCurrencyRate(date: CurrencyRate["date"],
-        sourceCurrencyCode: Currency["code"],
-        targetCurrencyCode: Currency["code"]): Promise<CurrencyRate | null> {
+    fetchCurrencyRate(_date: CurrencyRate["date"],
+        _sourceCurrencyCode: Currency["code"],
+        _targetCurrencyCode: Currency["code"]): Promise<CurrencyRate | null> {
         throw new Error("Not implemented")
     }
 
-    fetchCurrencyRates(startDate?: CurrencyRate["date"],
-        endDate?: CurrencyRate["date"],
-        sourceCurrencyCode?: Currency["code"],
-        targetCurrencyCode?: Currency["code"]): Promise<CurrencyRate[]> {
+    fetchCurrencyRates(_startDate?: CurrencyRate["date"],
+        _endDate?: CurrencyRate["date"],
+        _sourceCurrencyCode?: Currency["code"],
+        _targetCurrencyCode?: Currency["code"]): Promise<CurrencyRate[]> {
         throw new Error("Not implemented")
     }
 
-    fetchRootAccounts(tenantID: Tenant["id"]): Promise<Account[]> {
+    fetchRootAccounts(_tenantID: Tenant["id"]): Promise<Account[]> {
         throw new Error("Not implemented")
     }
 
-    fetchScraperParameterType(id: ScraperParameterType["id"]): Promise<ScraperParameterType | null> {
+    fetchScraperParameterType(_id: ScraperParameterType["id"]): Promise<ScraperParameterType | null> {
         throw new Error("Not implemented")
     }
 
@@ -255,7 +255,7 @@ export class NoOpDataLayer {
         throw new Error("Not implemented")
     }
 
-    fetchScraperType(scraperTypeID: ScraperType["id"]): Promise<ScraperType | null> {
+    fetchScraperType(_scraperTypeID: ScraperType["id"]): Promise<ScraperType | null> {
         throw new Error("Not implemented")
     }
 
@@ -263,12 +263,12 @@ export class NoOpDataLayer {
         throw new Error("Not implemented")
     }
 
-    fetchScraperTypeParameter(scraperTypeID: ScraperType["id"],
-        scraperTypeParameterID: ScraperTypeParameter["id"]): Promise<ScraperTypeParameter | null> {
+    fetchScraperTypeParameter(_scraperTypeID: ScraperType["id"],
+        _scraperTypeParameterID: ScraperTypeParameter["id"]): Promise<ScraperTypeParameter | null> {
         throw new Error("Not implemented")
     }
 
-    fetchScraperTypeParameters(scraperTypeID: ScraperType["id"]): Promise<ScraperTypeParameter[]> {
+    fetchScraperTypeParameters(_scraperTypeID: ScraperType["id"]): Promise<ScraperTypeParameter[]> {
         throw new Error("Not implemented")
     }
 
@@ -276,39 +276,39 @@ export class NoOpDataLayer {
         throw new Error("Not implemented")
     }
 
-    fetchScraper(tenantID: Tenant["id"], scraperTypeID: ScraperType["id"], id: Scraper["id"]): Promise<Scraper | null> {
+    fetchScraper(_tenantID: Tenant["id"], _scraperTypeID: ScraperType["id"], _id: Scraper["id"]): Promise<Scraper | null> {
         throw new Error("Not implemented")
     }
 
-    fetchScrapers(tenantID: Tenant["id"]): Promise<Scraper[]> {
+    fetchScrapers(_tenantID: Tenant["id"]): Promise<Scraper[]> {
         throw new Error("Not implemented")
     }
 
-    fetchScraperParameters(tenantID: Tenant["id"],
-        scraperTypeID: ScraperType["id"],
-        id: Scraper["id"]): Promise<ScraperParameter[]> {
+    fetchScraperParameters(_tenantID: Tenant["id"],
+        _scraperTypeID: ScraperType["id"],
+        _id: Scraper["id"]): Promise<ScraperParameter[]> {
         throw new Error("Not implemented")
     }
 
-    fetchTenants(args: QueryTenantsArgs): Promise<Tenant[]> {
+    fetchTenants(_args: QueryTenantsArgs): Promise<Tenant[]> {
         throw new Error("Not implemented")
     }
 
-    fetchTenant(id: Tenant["id"]): Promise<Tenant | null> {
+    fetchTenant(_id: Tenant["id"]): Promise<Tenant | null> {
         throw new Error("Not implemented")
     }
 
-    fetchTransactions(tenantID: Tenant["id"],
-        direction: TransactionsKey["direction"],
-        args: TenantTransactionsArgs): Promise<TransactionsResult> {
+    fetchTransactions(_tenantID: Tenant["id"],
+        _direction: TransactionsKey["direction"],
+        _args: TenantTransactionsArgs): Promise<TransactionsResult> {
         throw new Error("Not implemented")
     }
 
-    fetchTransactionsSummary(tenantID: Tenant["id"]): Promise<TransactionsSummaryResult> {
+    fetchTransactionsSummary(_tenantID: Tenant["id"]): Promise<TransactionsSummaryResult> {
         throw new Error("Not implemented")
     }
 
-    moveAccount(args: MutationMoveAccountArgs): Promise<Account> {
+    moveAccount(_args: MutationMoveAccountArgs): Promise<Account> {
         throw new Error("Not implemented")
     }
 }
