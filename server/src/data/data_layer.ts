@@ -204,7 +204,7 @@ export class NoOpDataLayer {
     }
 
     fetchAccountBalanceOverTime(_tenantID: Tenant["id"],
-        accountID: Account["id"],
+        _accountID: Account["id"],
         _args: AccountBalanceOverTimeArgs): Promise<BalancePoint[]> {
         throw new Error("Not implemented")
     }
