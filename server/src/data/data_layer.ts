@@ -213,7 +213,7 @@ export class NoOpDataLayer {
         throw new Error("Not implemented")
     }
 
-    fetchAccounts(_tenantID: Tenant["id"], filter?: string | null): Promise<Account[]> {
+    fetchAccounts(_tenantID: Tenant["id"], _filter?: string | null): Promise<Account[]> {
         throw new Error("Not implemented")
     }
 
