@@ -11,7 +11,6 @@ import {
 import { PoolClient } from "pg"
 import { AccountsDataAccessLayer } from "./accounts.js"
 import { convertObjectKeysToCamelCase } from "./pg_client.js"
-import { GraphQLError } from "graphql"
 
 type TenantSortColumnMapping = {
     [key in TenantsSortColumns]: string
@@ -27,15 +26,6 @@ export class TenantsDataAccessLayer {
     }
 
     async createTenant(accounts: AccountsDataAccessLayer, args: MutationCreateTenantArgs): Promise<Tenant> {
-        if (args.id.length > 10) {
-            throw new GraphQLError(`Tenant ID must be 10 characters or less`, {
-                extensions: {
-                    code: "BAD_USER_INPUT",
-                    argumentName: "id",
-                }
-            })
-        }
-
         const res = await this.pg.query(`
             INSERT INTO tenants (id, display_name)
             VALUES ($1, $2)
