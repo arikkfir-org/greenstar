@@ -19,7 +19,7 @@
         "@urql/core": "^5.2.0",
         "graphql": "^16.11.0",
         "js-yaml": "^4.1.0",
-        "luxon": "^3.6.1",
+        "luxon": "^3.7.1",
         "random-seed": "^0.3.0",
         "uuid": "^11.1.0"
     },
@@ -30,7 +30,7 @@
         "@graphql-codegen/typescript-document-nodes": "^4.0.16",
         "@tsconfig/node23": "^23.0.2",
         "@types/js-yaml": "^4.0.9",
-        "@types/luxon": "^3.6.2",
+        "@types/luxon": "^3.7.1",
         "@types/node": "^24.0.10",
         "@types/random-seed": "^0.3.5",
         "ts-node": "^10.9.2",
