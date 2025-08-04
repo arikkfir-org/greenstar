@@ -23,7 +23,6 @@ import {
     ScraperType,
     ScraperTypeParameter,
     Tenant,
-    TenantAccountsArgs,
     TenantAccountsBalanceOverTimeArgs,
     TenantTransactionsArgs,
     Transaction,
@@ -42,10 +41,6 @@ export interface AccountKey {
     accountID: Account["id"]
 }
 
-export interface AccountsKey extends TenantAccountsArgs {
-    tenantID: Tenant["id"]
-}
-
 export interface CurrencyRateKey {
     date: CurrencyRate["date"],
     sourceCurrencyCode: Currency["code"],
@@ -61,11 +56,6 @@ export interface ScraperKey {
     tenantID: Tenant["id"],
     scraperTypeID: ScraperType["id"],
     id: Scraper["id"],
-}
-
-export interface TransactionKey {
-    tenantID: string
-    txID: string
 }
 
 export interface TransactionsKey extends TenantTransactionsArgs {
@@ -158,7 +148,7 @@ export interface DataLayer {
     moveAccount(args: MutationMoveAccountArgs): Promise<Account>
 }
 
-export class NoOpDataLayer {
+export class NoOpDataLayer implements DataLayer {
     createAccount(_args: MutationCreateAccountArgs): Promise<Account> {
         throw new Error("Not implemented")
     }
@@ -272,10 +262,6 @@ export class NoOpDataLayer {
         throw new Error("Not implemented")
     }
 
-    fetchTransaction(_tenantID: Tenant["id"], _txID: Transaction["id"]): Promise<Transaction | null> {
-        throw new Error("Not implemented")
-    }
-
     fetchScraper(_tenantID: Tenant["id"], _scraperTypeID: ScraperType["id"], _id: Scraper["id"]): Promise<Scraper | null> {
         throw new Error("Not implemented")
     }
@@ -295,6 +281,10 @@ export class NoOpDataLayer {
     }
 
     fetchTenant(_id: Tenant["id"]): Promise<Tenant | null> {
+        throw new Error("Not implemented")
+    }
+
+    fetchTransaction(_tenantID: Tenant["id"], _txID: Transaction["id"]): Promise<Transaction | null> {
         throw new Error("Not implemented")
     }
 
@@ -323,13 +313,7 @@ export class DataLayerImpl implements DataLayer {
     private readonly scraper: DataLoader<ScraperKey, Scraper | null>
     private readonly scraperParameters: DataLoader<ScraperKey, ScraperParameter[]>
     private readonly tenant: DataLoader<Tenant["id"], Tenant | null>
-    private readonly rootAccounts: DataLoader<Tenant["id"], Account[]>
     private readonly account: DataLoader<AccountKey, Account | null>
-    private readonly accounts: DataLoader<AccountsKey, Account[], string>
-    private readonly accountChildren: DataLoader<AccountKey, Account[], string>
-    private readonly transaction: DataLoader<TransactionKey, Transaction | null, string>
-    private readonly transactions: DataLoader<TransactionsKey, TransactionsResult, string>
-    private readonly transactionsSummary: DataLoader<Tenant["id"], TransactionsSummaryResult, string>
 
     constructor(
         private readonly accountsDAO: AccountsDataAccessLayer,
@@ -450,17 +434,6 @@ export class DataLayerImpl implements DataLayer {
             { name: "tenant" },
         )
 
-        this.rootAccounts = new DataLoader<Tenant["id"], Account[]>(
-            async (keys: readonly Tenant["id"][]): Promise<(Account[])[]> => {
-                const rowsPerKey = new Map<Tenant["id"], Account[]>()
-                for (const k of keys) {
-                    rowsPerKey.set(k, await this.accountsDAO.fetchRootAccounts(k))
-                }
-                return keys.map(k => rowsPerKey.get(k) || [])
-            },
-            { name: "rootAccounts" },
-        )
-
         this.account = new DataLoader<AccountKey, Account | null>(
             async (keys: readonly AccountKey[]): Promise<(Account | null)[]> => {
                 const rowsPerKey = new Map<AccountKey, Account | null>()
@@ -470,61 +443,6 @@ export class DataLayerImpl implements DataLayer {
                 return keys.map(k => rowsPerKey.get(k) || null)
             },
             { name: "account" },
-        )
-
-        this.accounts = new DataLoader<AccountsKey, Account[]>(
-            async (keys: readonly AccountsKey[]): Promise<(Account[])[]> => {
-                const rowsPerKey = new Map<AccountsKey, Account[]>()
-                for (const k of keys) {
-                    rowsPerKey.set(k, await this.accountsDAO.fetchAccounts(k.tenantID, k.filter))
-                }
-                return keys.map(k => rowsPerKey.get(k) || [])
-            },
-            { name: "accounts" },
-        )
-
-        this.accountChildren = new DataLoader<AccountKey, Account[]>(
-            async (keys: readonly AccountKey[]): Promise<Account[][]> => {
-                const rowsPerKey = new Map<AccountKey, Account[]>()
-                for (const k of keys) {
-                    rowsPerKey.set(k, await this.accountsDAO.fetchChildAccounts(k.tenantID, k.accountID))
-                }
-                return keys.map(k => rowsPerKey.get(k) || [])
-            },
-            { name: "childAccounts" },
-        )
-
-        this.transaction = new DataLoader<TransactionKey, Transaction | null>(
-            async (keys: readonly TransactionKey[]): Promise<(Transaction | null)[]> => {
-                const rowsPerKey = new Map<TransactionKey, Transaction | null>()
-                for (const k of keys) {
-                    rowsPerKey.set(k, await this.transactionsDAO.fetchTransaction(k.tenantID, k.txID))
-                }
-                return keys.map(k => rowsPerKey.get(k) || null)
-            },
-            { name: "transaction" },
-        )
-
-        this.transactions = new DataLoader<TransactionsKey, TransactionsResult>(
-            async (keys: readonly TransactionsKey[]): Promise<TransactionsResult[]> => {
-                const rowsPerKey = new Map<TransactionsKey, TransactionsResult>()
-                for (const k of keys) {
-                    rowsPerKey.set(k, await this.transactionsDAO.fetchTransactions(k.tenantID, k.direction, k))
-                }
-                return keys.map(k => rowsPerKey.get(k)!)
-            },
-            { name: "transactions" },
-        )
-
-        this.transactionsSummary = new DataLoader<Tenant["id"], TransactionsSummaryResult>(
-            async (keys: readonly Tenant["id"][]): Promise<TransactionsSummaryResult[]> => {
-                const rowsPerKey = new Map<Tenant["id"], TransactionsSummaryResult>()
-                for (const k of keys) {
-                    rowsPerKey.set(k, await this.transactionsDAO.fetchTransactionsSummary(k))
-                }
-                return keys.map(k => rowsPerKey.get(k)!)
-            },
-            { name: "transactionsSummary" },
         )
     }
 
@@ -569,9 +487,7 @@ export class DataLayerImpl implements DataLayer {
     }
 
     async createTransaction(args: MutationCreateTransactionArgs): Promise<Transaction> {
-        const row = await this.transactionsDAO.createTransaction(args.tx)
-        this.transaction.prime({ tenantID: args.tx.tenantID, txID: row.id }, row)
-        return row
+        return await this.transactionsDAO.createTransaction(args.tx)
     }
 
     async deleteAccount(args: MutationDeleteAccountArgs): Promise<void> {
@@ -588,15 +504,12 @@ export class DataLayerImpl implements DataLayer {
     async deleteTenant(args: MutationDeleteTenantArgs): Promise<void> {
         const row = await this.tenantsDAO.deleteTenant(args)
         this.tenant.clear(args.id)
-        this.accounts.clear({ tenantID: args.id })
-        this.rootAccounts.clear(args.id)
-        this.transactionsSummary.clear(args.id)
+        this.account.clearAll()
         return row
     }
 
     async deleteTransaction(args: MutationDeleteTransactionArgs): Promise<void> {
-        await this.transactionsDAO.deleteTransaction(args.tenantID, args.id)
-        this.transaction.clear({ tenantID: args.tenantID, txID: args.id })
+        return await this.transactionsDAO.deleteTransaction(args.tenantID, args.id)
     }
 
     async fetchAccount(tenantID: Tenant["id"], accountID: Account["id"]): Promise<Account | null> {
@@ -620,13 +533,13 @@ export class DataLayerImpl implements DataLayer {
     }
 
     async fetchAccountChildren(tenantID: Tenant["id"], accountID: Account["id"]): Promise<Account[]> {
-        const accounts = await this.accountChildren.load({ tenantID, accountID })
+        const accounts = await this.accountsDAO.fetchChildAccounts(tenantID, accountID)
         accounts.forEach(a => this.account.prime({ tenantID, accountID: a.id }, a))
         return accounts
     }
 
     async fetchAccounts(tenantID: Tenant["id"], filter?: string | null): Promise<Account[]> {
-        const accounts = await this.accounts.load({ tenantID, filter })
+        const accounts = await this.accountsDAO.fetchAccounts(tenantID, filter)
         accounts.forEach(a => this.account.prime({ tenantID, accountID: a.id }, a))
         return accounts
     }
@@ -635,7 +548,7 @@ export class DataLayerImpl implements DataLayer {
         tenantID: Tenant["id"],
         args: TenantAccountsBalanceOverTimeArgs,
     ): Promise<AccountBalanceOverTime[]> {
-        const txSummary = await this.transactionsSummary.load(tenantID)
+        const txSummary = await this.fetchTransactionsSummary(tenantID)
         return this.accountsDAO.fetchAccountsBalanceOverTime(tenantID,
             args.accountIDs,
             args.currency,
@@ -675,9 +588,9 @@ export class DataLayerImpl implements DataLayer {
     }
 
     async fetchRootAccounts(tenantID: Tenant["id"]): Promise<Account[]> {
-        const accounts = await this.rootAccounts.load(tenantID)
-        accounts.forEach(a => this.account.prime({ tenantID, accountID: a.id }, a))
-        return accounts
+        const rootAccounts = await this.accountsDAO.fetchRootAccounts(tenantID)
+        rootAccounts.forEach(a => this.account.prime({ tenantID, accountID: a.id }, a))
+        return rootAccounts
     }
 
     async fetchScraperParameterType(id: ScraperParameterType["id"]): Promise<ScraperParameterType | null> {
@@ -753,7 +666,7 @@ export class DataLayerImpl implements DataLayer {
     }
 
     async fetchTransaction(tenantID: Tenant["id"], txID: Transaction["id"]): Promise<Transaction | null> {
-        return await this.transaction.load({ tenantID, txID })
+        return await this.transactionsDAO.fetchTransaction(tenantID, txID)
     }
 
     async fetchTransactions(
@@ -761,11 +674,11 @@ export class DataLayerImpl implements DataLayer {
         direction: TransactionsKey["direction"],
         args: TenantTransactionsArgs,
     ): Promise<TransactionsResult> {
-        return await this.transactions.load({ tenantID, direction, ...args })
+        return await this.transactionsDAO.fetchTransactions(tenantID, direction, args)
     }
 
     async fetchTransactionsSummary(tenantID: Tenant["id"]): Promise<TransactionsSummaryResult> {
-        return await this.transactionsSummary.load(tenantID)
+        return await this.transactionsDAO.fetchTransactionsSummary(tenantID)
     }
 
     async moveAccount(args: MutationMoveAccountArgs): Promise<Account> {
@@ -775,7 +688,6 @@ export class DataLayerImpl implements DataLayer {
             args.targetParentAccountID || null,
         )
         this.account.prime({ tenantID: args.tenantID, accountID: row.id }, row)
-        this.accountChildren.clearAll()
         return row
     }
 }
