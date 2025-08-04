@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        module: [ acme, e2e, frontend, ratesjob, server ]
+        module: [ acme, e2e, frontend, ratesjob, scrapers, server ]
       fail-fast: true
     steps:
 
@@ -56,7 +56,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        image: [ acme, e2e, frontend, ratesjob, server ]
+        image: [ acme, e2e, frontend, ratesjob, scrapers, server ]
       fail-fast: true
     permissions:
       contents: read

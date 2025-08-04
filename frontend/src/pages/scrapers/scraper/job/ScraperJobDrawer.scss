@@ -1,0 +1,16 @@
+.scraper-job-drawer {
+  display: flex;
+  flex-grow: 1;
+  flex-direction: column;
+  gap: 1em 1em;
+  padding: 1em;
+  min-width: 60vw;
+
+  .obfuscated {
+    -webkit-text-security: disc
+  }
+
+  div.tab {
+    flex-grow: 1;
+  }
+}

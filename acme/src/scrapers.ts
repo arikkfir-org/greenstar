@@ -1,21 +1,21 @@
 import { gql } from "@urql/core"
 import { graphQLClient } from "./graphql-client.js"
-import { CreateScraperMutation, CreateScraperMutationVariables, Tenant } from "./graphql/graphql.js"
+import { Tenant, UpsertScraperMutation, UpsertScraperMutationVariables } from "./graphql/graphql.js"
 import { ACMEScraper } from "./main.js"
 import { splitCamelCase } from "./util.js"
 
-export const CreateScraper = gql(`
-    mutation CreateScraper(
+export const UpsertScraper = gql(`
+    mutation UpsertScraper(
         $tenantID: ID!
+        $id: ID!,
         $scraperTypeID: ID!
-        $id: ID!
         $displayName: String!
         $parameters: [ScraperParameterInput!]!
     ) {
-        createScraper(
+        upsertScraper(
             tenantID: $tenantID
-            scraperTypeID: $scraperTypeID
             id: $id
+            scraperTypeID: $scraperTypeID
             displayName: $displayName
             parameters: $parameters
         ) {
@@ -25,17 +25,15 @@ export const CreateScraper = gql(`
 `)
 
 export async function generateScraper(tenantID: Tenant["id"], scraper: ACMEScraper) {
-    const result = await graphQLClient.mutation<CreateScraperMutation, CreateScraperMutationVariables>(
-        CreateScraper,
+    const result = await graphQLClient.mutation<UpsertScraperMutation, UpsertScraperMutationVariables>(
+        UpsertScraper,
         {
             tenantID,
-            scraperTypeID: scraper.type,
             id: scraper.id,
+            scraperTypeID: scraper.type,
             displayName: scraper.displayName || splitCamelCase(scraper.id),
-            parameters: Object.entries(scraper.parameters || {}).map(kv => ({
-                scraperTypeParameterID: kv[0],
-                value: kv[1],
-            })) || [],
+            parameters: Object.entries(scraper.parameters || {})
+                              .map(([ parameterID, value ]) => ({ parameterID, value })) || [],
         }).toPromise()
     if (result.error) {
         throw result.error

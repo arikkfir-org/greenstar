@@ -17,6 +17,12 @@ build:
           VERSION: 0.0.0+local
         dockerfile: ratesjob/Dockerfile
       image: ghcr.io/arikkfir-org/greenstar/ratesjob
+    - context: scrapers
+      docker:
+        buildArgs:
+          VERSION: 0.0.0+local
+        dockerfile: scrapers/Dockerfile
+      image: ghcr.io/arikkfir-org/greenstar/scrapers
     - context: server
       docker:
         buildArgs:
@@ -77,6 +83,10 @@ deploy:
             image:
               repository: "{{.IMAGE_REPO_ghcr_io_arikkfir_org_greenstar_ratesjob}}"
               tag: "{{.IMAGE_TAG_ghcr_io_arikkfir_org_greenstar_ratesjob}}@{{.IMAGE_DIGEST_ghcr_io_arikkfir_org_greenstar_ratesjob}}"
+          scrapers:
+            image:
+              repository: "{{.IMAGE_REPO_ghcr_io_arikkfir_org_greenstar_scrapers}}"
+              tag: "{{.IMAGE_TAG_ghcr_io_arikkfir_org_greenstar_scrapers}}@{{.IMAGE_DIGEST_ghcr_io_arikkfir_org_greenstar_scrapers}}"
           server:
             image:
               repository: "{{.IMAGE_REPO_ghcr_io_arikkfir_org_greenstar_server}}"

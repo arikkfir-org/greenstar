@@ -1,0 +1,19 @@
+.gridpage {
+  padding: 1em;
+
+  display: grid;
+  grid-template: "grid" 1fr / 1fr;
+  grid-gap: 1em;
+  height: 100%;
+
+  > .container {
+    grid-area: grid;
+    height: 100%;
+    flex-direction: column;
+
+    display: grid;
+    grid-template-rows: 1fr;
+    min-height: 0;
+    overflow: hidden;
+  }
+}

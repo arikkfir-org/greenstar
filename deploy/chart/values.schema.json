@@ -108,6 +108,18 @@
                 }
             }
         },
+        "scrapers": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "image": {
+                    "$ref": "#/$defs/image"
+                },
+                "rbac": {
+                    "$ref": "#/$defs/rbacConfiguration"
+                }
+            }
+        },
         "ratesjob": {
             "type": "object",
             "additionalProperties": false,

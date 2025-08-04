@@ -5,6 +5,7 @@
         "forceConsistentCasingInFileNames": true,
         "rootDir": "./src",
         "outDir": "dist",
+        "resolveJsonModule": true,
         "target": "ES2022"
     },
     "include": ["src/**/*.ts"],

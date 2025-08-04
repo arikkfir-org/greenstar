@@ -57,6 +57,7 @@ function Nav() {
     const navLocations           = [
         { value: "/", label: "Home" },
         { value: "/transactions", label: "Transactions" },
+        { value: "/scrapers", label: "Scrapers" },
         { value: "/about", label: "About" },
     ]
     return (

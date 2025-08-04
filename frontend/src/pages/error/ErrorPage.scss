@@ -1,0 +1,19 @@
+.error-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  > .container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    padding: 1em;
+
+    hr {
+      margin-top: 0.5em;
+      margin-bottom: 0.5em;
+    }
+  }
+}

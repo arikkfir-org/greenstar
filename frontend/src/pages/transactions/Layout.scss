@@ -3,8 +3,7 @@
 
   display: grid;
   grid-template:
-    "accounts-tree transactions-grid" 1fr
-  / 25% 1fr;
+    "accounts-tree transactions-grid" 1fr / 25% 1fr;
   grid-gap: 1em;
   height: 100%;
 
