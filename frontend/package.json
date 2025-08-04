@@ -30,7 +30,7 @@
         "@mui/x-charts-pro": "^8.5.2",
         "@mui/x-data-grid-premium": "^8.5.2",
         "@mui/x-date-pickers-pro": "^8.5.2",
-        "@mui/x-tree-view-pro": "^8.5.2",
+        "@mui/x-tree-view-pro": "^8.9.2",
         "classnames": "^2.5.1",
         "graphql": "^16.11.0",
         "lodash": "^4.17.21",
