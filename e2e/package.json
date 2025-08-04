@@ -16,7 +16,7 @@
     },
     "keywords": [],
     "devDependencies": {
-        "@playwright/test": "^1.54.1",
+        "@playwright/test": "^1.54.2",
         "@types/node": "^24.0.10"
     },
     "dependencies": {
