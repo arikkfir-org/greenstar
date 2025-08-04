@@ -31,7 +31,7 @@
         "@tsconfig/node23": "^23.0.2",
         "@types/js-yaml": "^4.0.9",
         "@types/luxon": "^3.6.2",
-        "@types/node": "^24.0.10",
+        "@types/node": "^24.1.0",
         "@types/random-seed": "^0.3.5",
         "ts-node": "^10.9.2",
         "typescript": "^5.8.3"
