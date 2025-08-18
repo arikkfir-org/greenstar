@@ -26,7 +26,7 @@
         "@graphql-typed-document-node/core": "^3.2.0",
         "@melloware/react-logviewer": "^6.3.1",
         "@mui/icons-material": "^7.1.1",
-        "@mui/material": "^7.1.1",
+        "@mui/material": "^7.3.1",
         "@mui/x-charts-pro": "^8.5.2",
         "@mui/x-data-grid-premium": "^8.5.2",
         "@mui/x-date-pickers-pro": "^8.5.2",
