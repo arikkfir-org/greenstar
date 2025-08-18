@@ -17,7 +17,7 @@
     "keywords": [],
     "devDependencies": {
         "@playwright/test": "^1.54.1",
-        "@types/node": "^24.0.10"
+        "@types/node": "^24.3.0"
     },
     "dependencies": {
         "dotenv": "^17.2.1",
