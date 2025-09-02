@@ -250,7 +250,7 @@ jobs:
 
       - name: Setup Google Cloud SDK
         if: success() || steps.test.outcome == 'success' || steps.test.outcome == 'failure'
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         env:
           WORKLOAD_IDP: projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions/providers/github-oidc
         with:
