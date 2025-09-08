@@ -22,7 +22,7 @@
     },
     "devDependencies": {
         "@graphql-codegen/cli": "^5.0.7",
-        "@graphql-codegen/schema-ast": "^4.1.0",
+        "@graphql-codegen/schema-ast": "^5.0.0",
         "@graphql-codegen/typescript": "^4.1.6",
         "@graphql-codegen/typescript-document-nodes": "^4.0.16",
         "@tsconfig/node23": "^23.0.2",
