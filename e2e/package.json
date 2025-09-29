@@ -21,7 +21,7 @@
     },
     "dependencies": {
         "dotenv": "^17.2.1",
-        "monocart-reporter": "^2.9.21"
+        "monocart-reporter": "^2.9.23"
     },
     "scarfSettings": {
         "enabled": false
