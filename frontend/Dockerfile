@@ -1,12 +1,12 @@
 # syntax=docker/dockerfile:1
 
-FROM node:24-alpine AS dependencies
+FROM node:25-alpine AS dependencies
 WORKDIR /app
 COPY package.json package-lock.json *.sh ./
 RUN npm ci
 RUN test -f apply-patches.sh && apk add --no-cache patch ed && ./apply-patches.sh && rm -f ./apply-patches.sh || true
 
-FROM node:24-alpine AS development
+FROM node:25-alpine AS development
 WORKDIR /app
 RUN echo "VITE_API_URL=https://api.greenstar.test" > .env
 ENV NODE_ENV=development
